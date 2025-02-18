@@ -93,3 +93,12 @@ export type LichessExplore = {
     name: string;
   };
 };
+export type CompactStateEntry = {
+  m?: (string | number)[];
+  p?: number;
+};
+export type CompactState = CompactStateEntry[];
+export type SaveState = {
+  white: CompactStateEntry[];
+  black: CompactStateEntry[];
+};
