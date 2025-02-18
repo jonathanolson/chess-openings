@@ -1,0 +1,34 @@
+{
+  "name": "chess-openings",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "license": "GPL-3.0-or-later",
+  "author": "Jonathan Olson jonathan.olson@colorado.edu",
+  "repository": "https://github.com/jonathanolson/chess-openings",
+  "scripts": {
+    "start": "npx vite",
+    "build": "npx tsc && npx vite build"
+  },
+  "dependencies": {
+    "scenerystack": "0.0.31",
+    "scenery-fontawesome-5": "^0.0.2",
+    "chess.js": "^1.0.0",
+    "chessground": "^9.1.1",
+    "culori": "^4.0.1",
+    "lodash": "^4.17.21",
+    "file-saver": "^2.0.5"
+  },
+  "devDependencies": {
+    "vite": "^5.4.10",
+    "eslint": "^9.17.0",
+    "@eslint/js": "^9.17.0",
+    "typescript-eslint": "^8.18.2",
+    "prettier": "^3.4.2",
+    "typescript": "~5.7.2",
+    "globals": "^15.14.0",
+    "@types/culori": "^2.1.1",
+    "@types/lodash": "^4.17.15",
+    "@types/file-saver": "^2.0.7"
+  }
+}
