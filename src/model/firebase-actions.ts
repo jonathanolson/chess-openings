@@ -4,15 +4,45 @@ import {
   signInWithPopup,
   signInWithEmailAndPassword,
   signOut,
+  User,
 } from "firebase/auth";
 import { db } from "./firebaseConfig";
 import { doc, setDoc, getDoc } from "firebase/firestore";
+import { onAuthStateChanged } from "firebase/auth";
+import { Property } from "scenerystack/axon";
 
-export async function signInWithGoogle(): Promise<string> {
+export const userProperty = new Property<User | null>(null);
+export const isUserLoadedProperty = new Property<boolean>(false);
+
+export const userLoadedPromise = new Promise<void>((resolve) => {
+  isUserLoadedProperty.link((isUserLoaded) => {
+    if (isUserLoaded) {
+      resolve();
+    }
+  });
+});
+export const userPromise = new Promise<User>((resolve) => {
+  userProperty.link((user) => {
+    if (user) {
+      resolve(user);
+    }
+  });
+});
+
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    userProperty.value = user;
+  } else {
+    userProperty.value = null;
+  }
+  isUserLoadedProperty.value = true;
+});
+
+export async function signInWithGoogle(): Promise<User> {
   const result = await signInWithPopup(auth, googleProvider);
   console.log("User signed in:", result.user);
   console.log("User ID (uid):", result.user.uid);
-  return result.user.uid;
+  return result.user;
 }
 
 export async function signUpWithEmail(
@@ -30,7 +60,7 @@ export async function signUpWithEmail(
 export async function signInWithEmail(
   email: string,
   password: string,
-): Promise<string> {
+): Promise<User> {
   const userCredential = await signInWithEmailAndPassword(
     auth,
     email,
@@ -38,7 +68,7 @@ export async function signInWithEmail(
   );
   console.log("User signed in:", userCredential.user);
   console.log("User ID (uid):", userCredential.user.uid);
-  return userCredential.user.uid;
+  return userCredential.user;
 }
 
 export async function logOut(): Promise<void> {

@@ -40,6 +40,7 @@ import {
   runningSolidShape,
   saveSolidShape,
   searchSolidShape,
+  signOutAltSolidShape,
   stepBackwardSolidShape,
   stepForwardSolidShape,
   thumbsDownSolidShape,
@@ -52,6 +53,15 @@ import { ChessNode, Nodes } from "./model/ChessNode";
 import { initialFen } from "./model/initialFen";
 import { stackLichessUpdatedEmitter, StackMove } from "./model/StackMove.js";
 import { copyToClipboard } from "./view/copyToClipboard.js";
+import { SignInNode } from "./view/SignInNode.js";
+import {
+  loadUserState,
+  logOut,
+  saveUserState,
+  userLoadedPromise,
+  userPromise,
+  userProperty,
+} from "./model/firebase-actions.js";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
@@ -71,28 +81,92 @@ window.Chess = Chess;
     },
   });
 
+  const topDiv = document.createElement("div");
+  topDiv.classList.add("blue");
+  topDiv.classList.add("is2d");
+  topDiv.style.display = "flex";
+  topDiv.style.justifyContent = "center";
+
+  const boardDiv = document.createElement("div");
+  boardDiv.id = "board";
+  boardDiv.classList.add("cg-wrap");
+  boardDiv.style.width = "360px";
+  boardDiv.style.height = "360px";
+  topDiv.appendChild(boardDiv);
+
+  const mainDiv = document.createElement("div");
+  mainDiv.id = "main-container";
+  mainDiv.style.display = "flex";
+  mainDiv.style.justifyContent = "center";
+
+  document.body.appendChild(topDiv);
+  document.body.appendChild(mainDiv);
+
+  document.body.style.backgroundColor = "#eee";
+
+  const scene = new Node();
+  const onselectstart = document.onselectstart;
+  const display = new Display(scene, {
+    width: 512,
+    height: 512,
+    backgroundColor: Color.TRANSPARENT,
+    passiveEvents: true,
+  });
+  document.onselectstart = onselectstart; // workaround for CSS hacks
+
+  const mainContainer = document.getElementById("main-container")!;
+  // mainContainer.insertBefore( display.domElement, mainContainer.children[ 0 ] );
+  mainContainer.appendChild(display.domElement);
+  display.domElement.style.position = "relative";
+  display.domElement.style.marginTop = "20px";
+
+  display.updateDisplay();
+  display.initializeEvents();
+
+  // TODO: how to handle sign-in better
+  display.updateOnRequestAnimationFrame(() => {
+    if (scene.bounds.isValid()) {
+      display.width = Math.max(Math.ceil(scene.right) + 2, 600);
+      display.height = Math.ceil(scene.bottom) + 2;
+    }
+  });
+
   let usedOnlineChessOpenings = false;
 
-  let usedChessOpenings;
+  type SaveState = {
+    white: CompactStateEntry[];
+    black: CompactStateEntry[];
+  };
+
+  let usedChessOpenings: SaveState;
   if (options.local) {
     usedChessOpenings = chessOpenings;
   } else {
     try {
-      const request = await fetch(
-        "https://api.jsonbin.io/v3/b/62c60aa24bccf21c2ed1777b/latest",
-        {
-          method: "GET",
-          headers: new Headers(
-            JSON.parse(
-              atob(
-                "eyJYLU1hc3Rlci1LZXkiOiIkMmIkMTAkYnVubnc0TkFPdzdmQmxzUlZ0OWNGTy9qYy41UkZHbmR4SXJjejNYbEw0LzN2M3ZUQUhYcWEiLCJYLUJpbi1NZXRhIjoiZmFsc2UifQ==",
-              ),
-            ),
-          ),
-        },
-      );
+      await userLoadedPromise;
+      console.log("user loaded!");
+      console.log(`user ${userProperty.value ? userProperty.value.uid : null}`);
 
-      usedChessOpenings = await request.json();
+      if (!userProperty.value) {
+        const signInNode = new SignInNode();
+
+        // TODO: resizability here
+
+        scene.addChild(signInNode);
+
+        // TODO: cleanup here
+        await userPromise;
+
+        scene.removeChild(signInNode);
+
+        console.log("got user");
+      }
+
+      usedChessOpenings = (await loadUserState<SaveState>(
+        userProperty.value!.uid,
+      ))!;
+
+      // TODO: assert this out?
 
       usedOnlineChessOpenings = true;
     } catch (e) {
@@ -589,20 +663,14 @@ window.Chess = Chess;
     } else {
       downloadBaseColor.value = Color.WHITE;
 
-      // TODO: enable saving?
-
-      // const request = await fetch( 'https://api.jsonbin.io/v3/b/62c60aa24bccf21c2ed1777b', {
-      //   method: 'PUT',
-      //   headers: new Headers( JSON.parse( atob( 'eyJYLU1hc3Rlci1LZXkiOiIkMmIkMTAkYnVubnc0TkFPdzdmQmxzUlZ0OWNGTy9qYy41UkZHbmR4SXJjejNYbEw0LzN2M3ZUQUhYcWEiLCJDb250ZW50LVR5cGUiOiJhcHBsaWNhdGlvbi9qc29uIn0=' ) ) ),
-      //   body: json
-      // } );
-      //
-      // if ( request.status === 200 ) {
-      //   downloadBaseColor.value = new Color( '#afa' );
-      // }
-      // else {
-      //   downloadBaseColor.value = new Color( '#faa' );
-      // }
+      try {
+        await saveUserState(userProperty.value!.uid, obj);
+        downloadBaseColor.value = new Color("#afa");
+      } catch (e) {
+        console.error("Failed to save!");
+        console.error(e);
+        downloadBaseColor.value = new Color("#faa");
+      }
     }
 
     return json;
@@ -776,29 +844,6 @@ window.Chess = Chess;
 
   const toColor = (board: Chess) => (board.turn() === "w" ? "white" : "black");
 
-  const topDiv = document.createElement("div");
-  topDiv.classList.add("blue");
-  topDiv.classList.add("is2d");
-  topDiv.style.display = "flex";
-  topDiv.style.justifyContent = "center";
-
-  const boardDiv = document.createElement("div");
-  boardDiv.id = "board";
-  boardDiv.classList.add("cg-wrap");
-  boardDiv.style.width = "360px";
-  boardDiv.style.height = "360px";
-  topDiv.appendChild(boardDiv);
-
-  const mainDiv = document.createElement("div");
-  mainDiv.id = "main-container";
-  mainDiv.style.display = "flex";
-  mainDiv.style.justifyContent = "center";
-
-  document.body.appendChild(topDiv);
-  document.body.appendChild(mainDiv);
-
-  document.body.style.backgroundColor = "#eee";
-
   const ground = Chessground(boardDiv, {
     coordinates: false,
     draggable: {
@@ -941,21 +986,6 @@ window.Chess = Chess;
     },
   });
 
-  const scene = new Node();
-  const onselectstart = document.onselectstart;
-  const display = new Display(scene, {
-    width: 512,
-    height: 512,
-    backgroundColor: Color.TRANSPARENT,
-    passiveEvents: true,
-  });
-  document.onselectstart = onselectstart; // workaround for CSS hacks
-  const mainContainer = document.getElementById("main-container")!;
-  // mainContainer.insertBefore( display.domElement, mainContainer.children[ 0 ] );
-  mainContainer.appendChild(display.domElement);
-  display.domElement.style.position = "relative";
-  display.domElement.style.marginTop = "20px";
-
   // Listen for the enter key press.
   document.body.addEventListener("keydown", (e) => {
     // console.log( e.keyCode );
@@ -967,9 +997,6 @@ window.Chess = Chess;
       goForward();
     }
   });
-
-  display.updateDisplay();
-  display.initializeEvents();
 
   const unboldFont = new Font({
     family: "Helvetica, Arial, sans-serif",
@@ -1178,6 +1205,16 @@ window.Chess = Chess;
         listener: deleteTree,
         baseColor: "#fff",
         enabledProperty: isNotDrillProperty,
+        buttonAppearanceStrategy: ButtonNode.FlatAppearanceStrategy,
+      }),
+      new RectangularPushButton({
+        content: new Path(signOutAltSolidShape, { fill: "black", scale: 0.03 }),
+        listener: async () => {
+          await logOut();
+
+          // TODO: show sign in!
+        },
+        baseColor: "#fff",
         buttonAppearanceStrategy: ButtonNode.FlatAppearanceStrategy,
       }),
     ],
@@ -1565,11 +1602,6 @@ window.Chess = Chess;
       ],
     }),
   );
-
-  display.updateOnRequestAnimationFrame(() => {
-    display.width = Math.max(Math.ceil(scene.right) + 2, 600);
-    display.height = Math.ceil(scene.bottom) + 2;
-  });
 
   const pgnInput = document.createElement("textarea");
   pgnInput.addEventListener("input", () => {
