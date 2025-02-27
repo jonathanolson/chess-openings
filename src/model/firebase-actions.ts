@@ -5,6 +5,8 @@ import {
   signInWithEmailAndPassword,
   signOut,
   User,
+  signInWithRedirect,
+  getRedirectResult,
 } from "firebase/auth";
 import { db } from "./firebaseConfig";
 import { doc, setDoc, getDoc } from "firebase/firestore";
@@ -38,11 +40,39 @@ onAuthStateChanged(auth, (user) => {
   isUserLoadedProperty.value = true;
 });
 
+(async () => {
+  const potentialUser = await checkRedirect();
+
+  if (potentialUser) {
+    userProperty.value = potentialUser;
+    isUserLoadedProperty.value = true;
+  }
+})();
+
 export async function signInWithGoogle(): Promise<User> {
+  console.log(`current user ${auth.currentUser}`);
   const result = await signInWithPopup(auth, googleProvider);
   console.log("User signed in:", result.user);
   console.log("User ID (uid):", result.user.uid);
   return result.user;
+}
+
+export async function signInWithGoogleRedirect(): Promise<void> {
+  console.log(`current user ${auth.currentUser}`);
+  await signInWithRedirect(auth, googleProvider);
+}
+
+export async function checkRedirect(): Promise<User | null> {
+  const result = await getRedirectResult(auth);
+
+  if (result) {
+    console.log("User signed in:", result.user);
+    console.log("User ID (uid):", result.user.uid);
+    return result.user;
+  } else {
+    console.log("No user signed in.");
+    return null;
+  }
 }
 
 export async function signUpWithEmail(

@@ -5,6 +5,9 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+localhost+2.pem
+localhost+2-key.pem
+
 node_modules
 dist
 dist-ssr

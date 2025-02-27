@@ -1,6 +1,10 @@
 import { Node, VBox } from "scenerystack/scenery";
 import { Panel, TextPushButton } from "scenerystack/sun";
-import { signInWithGoogle, userProperty } from "../model/firebase-actions.js";
+import {
+  signInWithGoogle,
+  signInWithGoogleRedirect,
+  userProperty,
+} from "../model/firebase-actions.js";
 
 export class SignInNode extends Node {
   public constructor() {
@@ -13,9 +17,26 @@ export class SignInNode extends Node {
               // TODO: borrow theming from slither
               new TextPushButton("Sign in with Google", {
                 listener: async () => {
-                  const user = await signInWithGoogle();
+                  try {
+                    const user = await signInWithGoogle();
 
-                  userProperty.value = user;
+                    userProperty.value = user;
+                  } catch (e: unknown) {
+                    const code = (e as { code: string }).code;
+
+                    const shouldRedirect =
+                      code &&
+                      (code === "auth/popup-blocked" ||
+                        code === "auth/cancelled-popup-request" ||
+                        code ===
+                          "auth/operation-not-supported-in-this-environment");
+
+                    if (shouldRedirect) {
+                      await signInWithGoogleRedirect();
+                    } else {
+                      throw e;
+                    }
+                  }
                 },
               }),
             ],
