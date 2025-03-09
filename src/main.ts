@@ -61,10 +61,16 @@ import {
   userPromise,
   userProperty,
 } from "./model/firebase-actions.js";
-import { boldFont, unboldFont } from "./view/theme.js";
+import {
+  backgroundColorProperty,
+  boldFont,
+  uiForegroundColorProperty,
+  unboldFont,
+} from "./view/theme.js";
 import { StackNode } from "./view/StackNode.js";
 import { defaultLichess } from "./data/defaultLichess.js";
 import { Model } from "./model/Model.js";
+import { isOSDarkModeProperty } from "./view/isOSDarkModeProperty.js";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
@@ -105,7 +111,9 @@ window.Chess = Chess;
   document.body.appendChild(topDiv);
   document.body.appendChild(mainDiv);
 
-  document.body.style.backgroundColor = "#eee";
+  backgroundColorProperty.link((color) => {
+    document.body.style.backgroundColor = color.toCSS();
+  });
 
   const scene = new Node();
   const onselectstart = document.onselectstart;
@@ -384,11 +392,13 @@ window.Chess = Chess;
     [
       {
         value: true,
-        createNode: () => new Text("White"),
+        createNode: () =>
+          new Text("White", { fill: uiForegroundColorProperty }),
       },
       {
         value: false,
-        createNode: () => new Text("Black"),
+        createNode: () =>
+          new Text("Black", { fill: uiForegroundColorProperty }),
       },
     ],
     {
@@ -518,6 +528,7 @@ window.Chess = Chess;
 
   const fenText = new Text("", {
     fontSize: 8,
+    fill: uiForegroundColorProperty,
     cursor: "pointer",
     inputListeners: [
       new FireListener({
@@ -532,6 +543,7 @@ window.Chess = Chess;
   const selectedOpeningNameProperty = new Property("-");
   const openingNameText = new Text(selectedOpeningNameProperty, {
     font: boldFont,
+    fill: uiForegroundColorProperty,
     visibleProperty: model.isNotDrillProperty,
   });
 

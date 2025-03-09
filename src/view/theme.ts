@@ -1,6 +1,8 @@
 import { converter, formatHex, parse } from "culori";
-import { Font } from "scenerystack/scenery";
+import { Color, Font, PaintDef, TColor } from "scenerystack/scenery";
 import { Vector2 } from "scenerystack/dot";
+import { DerivedProperty, DerivedProperty1 } from "scenerystack/axon";
+import { isOSDarkModeProperty } from "./isOSDarkModeProperty.js";
 
 const nicePurpleK = converter("oklab")(parse("#c87adb"))!;
 const nicePurpleHueChroma = new Vector2(nicePurpleK.a, nicePurpleK.b);
@@ -25,3 +27,23 @@ export const boldFont = new Font({
   size: 12,
   weight: "bold",
 });
+
+class LightDarkColorProperty extends DerivedProperty1<Color, boolean> {
+  public constructor(
+    public readonly lightColor: TColor,
+    public readonly darkColor: TColor,
+  ) {
+    super([isOSDarkModeProperty], (isDark) => {
+      return PaintDef.toColor(isDark ? darkColor : lightColor);
+    });
+  }
+}
+
+export const backgroundColorProperty = new LightDarkColorProperty(
+  "#eee",
+  "#333",
+);
+export const uiForegroundColorProperty = new LightDarkColorProperty(
+  "#000",
+  "rgb(204,204,204)",
+);
