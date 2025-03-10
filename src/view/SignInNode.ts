@@ -1,4 +1,4 @@
-import { Node, VBox } from "scenerystack/scenery";
+import { Font, Node, VBox } from "scenerystack/scenery";
 import { Panel, TextPushButton } from "scenerystack/sun";
 import {
   signInWithGoogle,
@@ -16,6 +16,10 @@ export class SignInNode extends Node {
             children: [
               // TODO: borrow theming from slither
               new TextPushButton("Sign in with Google", {
+                font: new Font({
+                  size: 24,
+                  family: "sans-serif",
+                }),
                 listener: async () => {
                   try {
                     const user = await signInWithGoogle();

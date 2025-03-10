@@ -1,6 +1,11 @@
 import { QueryStringMachine } from "scenerystack/query-string-machine";
 import { enableAssert } from "scenerystack/assert";
-import { DerivedProperty, Multilink, Property } from "scenerystack/axon";
+import {
+  DerivedProperty,
+  Multilink,
+  NumberProperty,
+  Property,
+} from "scenerystack/axon";
 import { Bounds2 } from "scenerystack/dot";
 import {
   Color,
@@ -70,7 +75,6 @@ import {
 import { StackNode } from "./view/StackNode.js";
 import { defaultLichess } from "./data/defaultLichess.js";
 import { Model } from "./model/Model.js";
-import { isOSDarkModeProperty } from "./view/isOSDarkModeProperty.js";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
@@ -105,8 +109,8 @@ window.Chess = Chess;
 
   const mainDiv = document.createElement("div");
   mainDiv.id = "main-container";
-  mainDiv.style.display = "flex";
-  mainDiv.style.justifyContent = "center";
+  // mainDiv.style.display = "flex";
+  // mainDiv.style.justifyContent = "center";
 
   document.body.appendChild(topDiv);
   document.body.appendChild(mainDiv);
@@ -134,10 +138,17 @@ window.Chess = Chess;
   display.updateDisplay();
   display.initializeEvents();
 
+  const layoutWidthProperty = new NumberProperty(0);
+  new ResizeObserver((entries) => {
+    for (const entry of entries) {
+      layoutWidthProperty.value = entry.contentRect.width;
+    }
+  }).observe(mainContainer);
+
   // TODO: how to handle sign-in better
   display.updateOnRequestAnimationFrame(() => {
     if (scene.bounds.isValid()) {
-      display.width = Math.max(Math.ceil(scene.right) + 2, 600);
+      display.width = layoutWidthProperty.value;
       display.height = Math.ceil(scene.bottom) + 2;
     }
   });
@@ -156,14 +167,19 @@ window.Chess = Chess;
       if (!userProperty.value) {
         const signInNode = new SignInNode();
 
-        // TODO: resizability here
-
+        const layoutListener = () => {
+          signInNode.centerX = layoutWidthProperty.value / 2;
+        };
+        layoutWidthProperty.link(layoutListener);
         scene.addChild(signInNode);
+
+        // TODO: resizability here
 
         // TODO: cleanup here
         await userPromise;
 
         scene.removeChild(signInNode);
+        layoutWidthProperty.unlink(layoutListener);
 
         console.log("got user");
       }
@@ -887,7 +903,11 @@ window.Chess = Chess;
 
   const pgnInput = document.createElement("textarea");
   pgnInput.addEventListener("input", () => {
-    model.setPGN(pgnInput.value);
+    try {
+      model.setPGN(pgnInput.value);
+    } catch (e) {
+      console.error(e);
+    }
   });
   document.body.appendChild(pgnInput);
 
