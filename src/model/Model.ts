@@ -52,6 +52,7 @@ export class Model {
 
   public readonly lastDrillProperty = new Property<StackMove[] | null>(null);
   public readonly useDrillWeightsProperty = new Property<boolean>(true);
+  public readonly lockDrillToColorProperty = new Property<boolean>(false);
 
   public constructor(saveState: SaveState) {
     compactStateToNodes(this.whiteNodes, saveState.white, true);
@@ -244,6 +245,14 @@ export class Model {
 
   public startNextDrill(): void {
     const possibleStacks: StackMove[][] = [];
+
+    if (
+      !this.lockDrillToColorProperty.value &&
+      this.drillBaseStackProperty.value.length === 0
+    ) {
+      // NOTE: we COULD properly distribute across everything, but this has a nice... feel.
+      this.isWhiteProperty.value = Math.random() < 0.5;
+    }
 
     const scan = (stack: StackMove[]) => {
       const lastStackMove = stack[stack.length - 1];

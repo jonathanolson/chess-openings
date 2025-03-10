@@ -1,8 +1,8 @@
 import { converter, formatHex, parse } from "culori";
 import { Color, Font, PaintDef, TColor } from "scenerystack/scenery";
 import { Vector2 } from "scenerystack/dot";
-import { DerivedProperty, DerivedProperty1 } from "scenerystack/axon";
-import { isOSDarkModeProperty } from "./isOSDarkModeProperty.js";
+import { DerivedProperty1 } from "scenerystack/axon";
+import { isOSDarkModeProperty } from "scenery-toolkit";
 
 const nicePurpleK = converter("oklab")(parse("#c87adb"))!;
 const nicePurpleHueChroma = new Vector2(nicePurpleK.a, nicePurpleK.b);

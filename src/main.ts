@@ -3,8 +3,8 @@ import { enableAssert } from "scenerystack/assert";
 import {
   DerivedProperty,
   Multilink,
-  NumberProperty,
   Property,
+  stepTimer,
 } from "scenerystack/axon";
 import { Bounds2 } from "scenerystack/dot";
 import {
@@ -35,6 +35,7 @@ import {
   eraserSolidShape,
   fileDownloadSolidShape,
   forwardSolidShape,
+  lockSolidShape,
   runningSolidShape,
   saveSolidShape,
   searchSolidShape,
@@ -75,6 +76,7 @@ import {
 import { StackNode } from "./view/StackNode.js";
 import { defaultLichess } from "./data/defaultLichess.js";
 import { Model } from "./model/Model.js";
+import { glassPane, TooltipListener, ViewContext } from "scenery-toolkit";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
@@ -109,8 +111,6 @@ window.Chess = Chess;
 
   const mainDiv = document.createElement("div");
   mainDiv.id = "main-container";
-  // mainDiv.style.display = "flex";
-  // mainDiv.style.justifyContent = "center";
 
   document.body.appendChild(topDiv);
   document.body.appendChild(mainDiv);
@@ -119,7 +119,11 @@ window.Chess = Chess;
     document.body.style.backgroundColor = color.toCSS();
   });
 
-  const scene = new Node();
+  const mainContent = new Node();
+  const scene = new Node({
+    children: [mainContent, glassPane],
+  });
+
   const onselectstart = document.onselectstart;
   const display = new Display(scene, {
     width: 512,
@@ -130,7 +134,6 @@ window.Chess = Chess;
   document.onselectstart = onselectstart; // workaround for CSS hacks
 
   const mainContainer = document.getElementById("main-container")!;
-  // mainContainer.insertBefore( display.domElement, mainContainer.children[ 0 ] );
   mainContainer.appendChild(display.domElement);
   display.domElement.style.position = "relative";
   display.domElement.style.marginTop = "20px";
@@ -138,18 +141,35 @@ window.Chess = Chess;
   display.updateDisplay();
   display.initializeEvents();
 
-  const layoutWidthProperty = new NumberProperty(0);
+  const layoutBoundsProperty = new Property(new Bounds2(0, 0, 0, 0));
+
   new ResizeObserver((entries) => {
     for (const entry of entries) {
-      layoutWidthProperty.value = entry.contentRect.width;
+      layoutBoundsProperty.value = layoutBoundsProperty.value.withMaxX(
+        Math.ceil(entry.contentRect.width),
+      );
     }
   }).observe(mainContainer);
+
+  const viewContext = new ViewContext(
+    layoutBoundsProperty,
+    glassPane,
+    stepTimer,
+  );
+
+  const genericTooltipListener = new TooltipListener(viewContext);
 
   // TODO: how to handle sign-in better
   display.updateOnRequestAnimationFrame(() => {
     if (scene.bounds.isValid()) {
-      display.width = layoutWidthProperty.value;
-      display.height = Math.ceil(scene.bottom) + 2;
+      // TODO: figure out something long-term
+      layoutBoundsProperty.value = layoutBoundsProperty.value.withMaxY(
+        Math.ceil(scene.bottom) + 2,
+      );
+      display.setWidthHeight(
+        layoutBoundsProperty.value.width,
+        layoutBoundsProperty.value.height,
+      );
     }
   });
 
@@ -168,18 +188,18 @@ window.Chess = Chess;
         const signInNode = new SignInNode();
 
         const layoutListener = () => {
-          signInNode.centerX = layoutWidthProperty.value / 2;
+          signInNode.centerX = layoutBoundsProperty.value.width / 2;
         };
-        layoutWidthProperty.link(layoutListener);
-        scene.addChild(signInNode);
+        layoutBoundsProperty.link(layoutListener);
+        mainContent.addChild(signInNode);
 
         // TODO: resizability here
 
         // TODO: cleanup here
         await userPromise;
 
-        scene.removeChild(signInNode);
-        layoutWidthProperty.unlink(layoutListener);
+        mainContent.removeChild(signInNode);
+        layoutBoundsProperty.unlink(layoutListener);
 
         console.log("got user");
       }
@@ -398,7 +418,12 @@ window.Chess = Chess;
     [model.stackProperty, model.stackPositionProperty, model.nodesProperty],
     (stack: StackMove[], stackPosition: number, nodes: Nodes) => {
       stackContainer.children = [
-        new StackNode(stack, stackPosition, nodes, model.selectStackIndex),
+        new StackNode(
+          stack,
+          stackPosition,
+          nodes,
+          model.selectStackIndex.bind(model),
+        ),
       ];
     },
   );
@@ -439,6 +464,7 @@ window.Chess = Chess;
     children: [
       new RectangularPushButton({
         content: new Path(backwardSolidShape, { fill: "black", scale: 0.03 }),
+        accessibleName: "Go to Starting Position",
         listener: () => model.goFullBack(),
         baseColor: "#fff",
         enabledProperty: canGoBackProperty,
@@ -449,6 +475,7 @@ window.Chess = Chess;
           fill: "black",
           scale: 0.03,
         }),
+        accessibleName: "Go Back",
         listener: () => model.goBack(),
         baseColor: "#fff",
         enabledProperty: canGoBackProperty,
@@ -459,6 +486,7 @@ window.Chess = Chess;
           fill: "black",
           scale: 0.03,
         }),
+        accessibleName: "Go Forward",
         listener: () => model.goForward(),
         baseColor: "#fff",
         enabledProperty: canGoForwardProperty,
@@ -466,6 +494,7 @@ window.Chess = Chess;
       }),
       new RectangularPushButton({
         content: new Path(forwardSolidShape, { fill: "black", scale: 0.03 }),
+        accessibleName: "Go to End of Line",
         listener: () => model.goFullForward(),
         baseColor: "#fff",
         enabledProperty: canGoForwardProperty,
@@ -473,6 +502,9 @@ window.Chess = Chess;
       }),
     ],
   });
+  controlButtons.children.forEach((button) =>
+    button.addInputListener(genericTooltipListener),
+  );
 
   const downloadBaseColor = new Property<Color>(Color.WHITE);
 
@@ -485,12 +517,14 @@ window.Chess = Chess;
           fill: "black",
           scale: 0.03,
         }),
+        accessibleName: "Save Changes",
         listener: exportState,
         baseColor: downloadBaseColor,
         buttonAppearanceStrategy: ButtonNode.FlatAppearanceStrategy,
       }),
       new RectangularPushButton({
         content: new Path(saveSolidShape, { fill: "black", scale: 0.03 }),
+        accessibleName: "Remember This Line",
         listener: () => model.saveTree(),
         baseColor: "#fff",
         enabledProperty: model.isNotDrillProperty,
@@ -498,6 +532,7 @@ window.Chess = Chess;
       }),
       new RectangularPushButton({
         content: new Path(eraserSolidShape, { fill: "black", scale: 0.03 }),
+        accessibleName: "Forget This Line",
         listener: () => model.deleteTree(),
         baseColor: "#fff",
         enabledProperty: model.isNotDrillProperty,
@@ -505,6 +540,7 @@ window.Chess = Chess;
       }),
       new RectangularPushButton({
         content: new Path(signOutAltSolidShape, { fill: "black", scale: 0.03 }),
+        accessibleName: "Log Out",
         listener: async () => {
           await logOut();
 
@@ -515,6 +551,9 @@ window.Chess = Chess;
       }),
     ],
   });
+  fileButtons.children.forEach((button) =>
+    button.addInputListener(genericTooltipListener),
+  );
 
   const drillButtons = new FlowBox({
     orientation: "horizontal",
@@ -522,18 +561,28 @@ window.Chess = Chess;
     children: [
       new RectangularPushButton({
         content: new Path(runningSolidShape, { fill: "black", scale: 0.03 }),
+        accessibleName: "Toggle Drill Mode",
         listener: () => model.toggleDrills(),
         baseColor: "#fff",
         buttonAppearanceStrategy: ButtonNode.FlatAppearanceStrategy,
       }),
       new BooleanRectangularStickyToggleButton(model.useDrillWeightsProperty, {
         content: new Path(dumbbellSolidShape, { fill: "black", scale: 0.03 }),
+        accessibleName: "Toggle Drill Weights",
+        baseColor: "#fff",
+        enabledProperty: model.isNotDrillProperty,
+        buttonAppearanceStrategy: ButtonNode.FlatAppearanceStrategy,
+      }),
+      new BooleanRectangularStickyToggleButton(model.lockDrillToColorProperty, {
+        content: new Path(lockSolidShape, { fill: "black", scale: 0.03 }),
+        accessibleName: "Lock Single Color",
         baseColor: "#fff",
         enabledProperty: model.isNotDrillProperty,
         buttonAppearanceStrategy: ButtonNode.FlatAppearanceStrategy,
       }),
       new RectangularPushButton({
         content: new Path(chartBarSolidShape, { fill: "black", scale: 0.03 }),
+        accessibleName: "Show Statistics",
         listener: () => showNodes(),
         baseColor: "#fff",
         enabledProperty: model.isNotDrillProperty,
@@ -541,6 +590,9 @@ window.Chess = Chess;
       }),
     ],
   });
+  drillButtons.children.forEach((button) =>
+    button.addInputListener(genericTooltipListener),
+  );
 
   const fenText = new Text("", {
     fontSize: 8,
@@ -847,7 +899,7 @@ window.Chess = Chess;
         children: [
           new RectangularPushButton({
             content: new Path(searchSolidShape, { fill: "black", scale: 0.03 }),
-            listener: model.examineDrill,
+            listener: () => model.examineDrill(),
             baseColor: "#fff",
             buttonAppearanceStrategy: ButtonNode.FlatAppearanceStrategy,
           }),
@@ -856,7 +908,7 @@ window.Chess = Chess;
               fill: "black",
               scale: 0.03,
             }),
-            listener: model.makeDrillEasier,
+            listener: () => model.makeDrillEasier(),
             baseColor: "#fff",
             buttonAppearanceStrategy: ButtonNode.FlatAppearanceStrategy,
           }),
@@ -865,7 +917,7 @@ window.Chess = Chess;
               fill: "black",
               scale: 0.03,
             }),
-            listener: model.makeDrillHarder,
+            listener: () => model.makeDrillHarder(),
             baseColor: "#fff",
             buttonAppearanceStrategy: ButtonNode.FlatAppearanceStrategy,
           }),
@@ -874,7 +926,7 @@ window.Chess = Chess;
     ],
   });
 
-  scene.addChild(
+  mainContent.addChild(
     new FlowBox({
       orientation: "horizontal",
       spacing: 20,

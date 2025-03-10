@@ -23,7 +23,7 @@ export class StackNode extends Node {
       return new Node();
     }
     const leftWidth = 25;
-    const rightWidth = 55;
+    const rightWidth = 52;
     const height = 20;
 
     const gridChildren: Node[] = [];
