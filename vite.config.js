@@ -1,6 +1,7 @@
-import { defineConfig } from "vite";
 import fs from "fs";
 import path from "path";
+import { defineConfig } from "vite";
+import { VitePWA } from "vite-plugin-pwa";
 
 // brew install mkcert nss
 // mkcert -install
@@ -14,6 +15,36 @@ const config = {
   base: "./",
 
   server: {},
+
+  plugins: [
+    VitePWA({
+      registerType: "autoUpdate",
+      workbox: {
+        // Increase precache limit to e.g. 4 MB
+        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
+        globPatterns: ["**/*.{js,css,html,ico,png,svg}"],
+      },
+      manifest: {
+        name: "Chess Openings - Jonathan Olson",
+        short_name: "Chess Openings",
+        description: "Learn chess openings interactively",
+        theme_color: "#eeeeee",
+        background_color: "#eeeeee",
+        icons: [
+          {
+            src: "chess-openings-512px.png",
+            type: "image/png",
+            sizes: "512x512",
+          },
+          {
+            src: "chess-openings-192px.png",
+            type: "image/png",
+            sizes: "192x192",
+          },
+        ],
+      },
+    }),
+  ],
 };
 
 if (fs.existsSync(httpsKeyFile) && fs.existsSync(httpsCertFile)) {
