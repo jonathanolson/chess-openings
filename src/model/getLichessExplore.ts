@@ -47,5 +47,3 @@ export const getLichessExplore = async (
 
   return lichessExplore[key];
 };
-
-window.getLichessExplore = getLichessExplore;
