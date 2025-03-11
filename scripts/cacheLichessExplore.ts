@@ -86,7 +86,7 @@ import { getFen } from "../src/model/getFen.js";
           await sleep(5000);
 
           console.log(
-            `${type} ${includeExpansion ? "expand " : ""}${appliedMoves.join(" ")}`,
+            `[${type}] ${includeExpansion ? "expand " : ""}${appliedMoves.join(" ")}`,
           );
 
           const data = await getLichessExplore(appliedMoves, type);

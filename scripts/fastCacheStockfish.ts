@@ -59,6 +59,8 @@ type StockfishData = Record<Fen, StockfishEntry>;
     ...blackFens,
     ...whiteExtendedFens,
     ...blackExtendedFens,
+    ...fenExtend(whiteExtendedFens),
+    ...fenExtend(blackExtendedFens),
   ]);
 
   console.log(`whiteFens: ${whiteFens.length}`);
