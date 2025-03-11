@@ -26,6 +26,8 @@ const config = {
   },
 
   plugins: [
+    // https://github.com/vite-pwa/vite-plugin-pwa/blob/main/src/types.ts
+    // https://vite-pwa-org.netlify.app/guide/pwa-minimal-requirements.html
     VitePWA({
       registerType: "autoUpdate",
       workbox: {
