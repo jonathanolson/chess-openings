@@ -117,9 +117,15 @@ import { getFen } from "../src/model/getFen.js";
     }
   };
 
-  await scan("lichessExploreBlitzLow", "blitzLow");
-  await scan("lichessExploreMasters", "masters");
-  await scan("lichessExploreBlitzHigh", "blitzHigh");
-  await scan("lichessExploreRapidLow", "rapidLow");
-  await scan("lichessExploreRapidHigh", "rapidHigh");
+  await scan("lichessExploreBlitzLow", "blitzLow", false);
+  await scan("lichessExploreMasters", "masters", false);
+  await scan("lichessExploreBlitzHigh", "blitzHigh", false);
+  await scan("lichessExploreRapidLow", "rapidLow", false);
+  await scan("lichessExploreRapidHigh", "rapidHigh", false);
+
+  await scan("lichessExploreBlitzLow", "blitzLow", true);
+  await scan("lichessExploreMasters", "masters", true);
+  await scan("lichessExploreBlitzHigh", "blitzHigh", true);
+  await scan("lichessExploreRapidLow", "rapidLow", true);
+  await scan("lichessExploreRapidHigh", "rapidHigh", true);
 })();
