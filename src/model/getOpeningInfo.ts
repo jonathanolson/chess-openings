@@ -1,24 +1,32 @@
 import ecoJSON from "../data/eco.json";
 import { Fen, Move } from "./common";
 import { Chess } from "chess.js";
-import { getFen } from "./getFen.js";
 
-export type OpeningInfo = {
-  // TODO: document
-};
+export interface OpeningInfo {
+  src: string;
+  eco: string;
+  moves: string;
+  name: string;
+  scid?: string;
+  aliases?: {
+    eco_js?: string;
+    scid?: string;
+  };
+  isEcoRoot?: boolean;
+}
 
 const json = ecoJSON as Record<Fen, OpeningInfo>;
 
-export const getOpeningInfo = (history: Move[]): OpeningInfo => {
+export const getOpeningInfo = (history: Move[]): OpeningInfo | null => {
   const fens: Fen[] = [];
 
   const board = new Chess();
   const addFen = () => {
-    fens.push(getFen(board));
+    fens.push(board.fen()); // NOTE: do NOT use getFen, we need the move number
   };
 
   addFen();
-  for (const move in history) {
+  for (const move of history) {
     board.move(move);
     addFen();
   }
@@ -30,6 +38,5 @@ export const getOpeningInfo = (history: Move[]): OpeningInfo => {
     }
   }
 
-  // TODO: do we need to add an entryfor the default?
-  throw new Error("No opening info found");
+  return null;
 };

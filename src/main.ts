@@ -77,6 +77,7 @@ import { StackNode } from "./view/StackNode.js";
 import { defaultLichess } from "./data/defaultLichess.js";
 import { Model } from "./model/Model.js";
 import { glassPane, TooltipListener, ViewContext } from "scenery-toolkit";
+import { getOpeningInfo } from "./model/getOpeningInfo.js";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
@@ -632,7 +633,6 @@ window.Chess = Chess;
 
     if (!node && !lichessExplore) {
       moveContainer.children = [];
-      selectedOpeningNameProperty.reset();
     } else {
       const moves = [];
 
@@ -657,14 +657,18 @@ window.Chess = Chess;
         } else {
           moves.push(...lichessMoves);
         }
-
-        if (lichessExplore.opening && lichessExplore.opening.name) {
-          selectedOpeningNameProperty.value = lichessExplore.opening.name;
-        } else {
-          selectedOpeningNameProperty.reset();
-        }
       } else {
         moves.push(...node.moves);
+      }
+
+      const openingInfo = stackMove ? getOpeningInfo(stackMove.history) : null;
+      console.log(stackMove?.history);
+      console.log(openingInfo);
+      console.log(fen);
+
+      if (openingInfo) {
+        selectedOpeningNameProperty.value = openingInfo.name;
+      } else {
         selectedOpeningNameProperty.reset();
       }
 
