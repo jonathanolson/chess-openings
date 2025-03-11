@@ -1,7 +1,6 @@
 import { Fen, Move } from "./common";
 import { Chess } from "chess.js";
 import { getFen } from "./getFen.js";
-import { assert } from "scenerystack/assert";
 import { initialFen } from "./initialFen.js";
 import _ from "lodash";
 
@@ -62,7 +61,9 @@ export class ChessNode {
   }
 
   public getChildMove(child: ChessNode): Move {
-    assert && assert(this.children.includes(child));
+    if (!this.children.includes(child)) {
+      throw new Error("Child not found");
+    }
 
     for (const move of Object.keys(this.moveMap)) {
       if (this.moveMap[move] === child) {
@@ -74,7 +75,9 @@ export class ChessNode {
   }
 
   public getChildNode(move: Move): ChessNode {
-    assert && assert(this.moves.includes(move));
+    if (!this.moves.includes(move)) {
+      throw new Error("Move not found");
+    }
 
     const board = new Chess(this.fen);
     const verboseMove = board.move(move);

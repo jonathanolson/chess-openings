@@ -37,6 +37,7 @@ export class StackMove {
     if (!this.lichessExplore) {
       this.lichessExplore = await getLichessExplore(this.history);
       stackLichessUpdatedEmitter.emit();
+      console.log(JSON.stringify(this.lichessExplore).length);
     }
   }
 

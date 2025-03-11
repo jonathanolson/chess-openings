@@ -4,6 +4,22 @@ import { BooleanProperty, TProperty } from "scenerystack/axon";
 import { Fen, Move, VerboseMove } from "./common.js";
 import { Chess } from "chess.js";
 
+/*
+
+  const stockfish = new Stockfish();
+  window.stockfish = stockfish;
+
+  const resultProperty = new Property<StockfishResult | null>(null);
+  resultProperty.lazyLink((result) => console.log(result));
+  await stockfish.getPropertyEvaluation(
+    "rnbqkbnr/p3pppp/2p5/1p6/P1pPP3/8/1P3PPP/RNBQKBNR w KQkq - 0 1",
+    "depth 24",
+    resultProperty,
+  );
+  console.log("finished");
+
+ */
+
 export type StockfishOptions = {
   hashSizeInMegabytes?: number;
 };
@@ -98,23 +114,7 @@ export class Stockfish {
       `setoption name Hash value ${options.hashSizeInMegabytes}`,
     );
 
-    // worker.postMessage( 'position fen rnbqkbnr/p3pppp/2p5/1p6/P1pPP3/8/1P3PPP/RNBQKBNR w KQkq - 0 1' )
-    // worker.postMessage( 'go depth 20' )
-
-    // new Chess( ... ).moves( { verbose: true } )
-    // new Chess( ... ).move( ... ) works for output of moves, RETURNS VERBOSE MOVE
-
-    // position [fen <fenstring> | startpos ]  moves <move1> .... <movei>
-
-    // responses:
-    // 'uciok' - loaded
-    // 'readyok' - ready
-
-    // 'setoption name Contempt value 0' - default zero contempt, or 'setoption name Skill Level value 20'
-    // 'setoption name King Safety value 0'); /// Agressive 100 (it's now symetric)
-    // 'setoption name Skill Level value ' + skill
-    // 'setoption name Contempt value ' + contempt);
-    // 'setoption name Aggressiveness value ' + value);
+    // https://gist.github.com/aliostad/f4470274f39d29b788c1b09519e67372
 
     this.worker.addEventListener("message", this.onMessage.bind(this));
   }
@@ -187,7 +187,7 @@ export class Stockfish {
 
   private onMessage(event: MessageEvent): void {
     const string = event.data as string;
-    // console.log(string);
+    console.log(string);
 
     if (string === "uciok") {
       this.isLoadedProperty.value = true;

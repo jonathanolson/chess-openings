@@ -1,4 +1,3 @@
-import { assert } from "scenerystack/assert";
 import { ChessNode, Nodes } from "./ChessNode";
 import { CompactState } from "./common";
 import { initialFen } from "./initialFen";
@@ -15,7 +14,9 @@ export const compactStateToNodes = (
 
   obj.forEach((entry, index) => {
     const fen = fens[index];
-    assert && assert(fen);
+    if (!fen) {
+      throw new Error("No fen?");
+    }
     const node = new ChessNode(fen, nodes, isWhite);
     nodes[fen] = node;
     if (entry.p) {
