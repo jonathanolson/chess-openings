@@ -13,6 +13,7 @@ dist
 dist-ssr
 *.local
 tsconfig.tsbuildinfo
+.stockfish
 
 # Editor directories and files
 .vscode/*
