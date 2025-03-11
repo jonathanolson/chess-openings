@@ -1,6 +1,7 @@
 import {
   CompactLichessExplore,
   getLichessExplore,
+  LichessExploreType,
 } from "../src/model/getLichessExplore.js";
 import chessOpenings from "../src/data/chessOpenings.js";
 import { Nodes } from "../src/model/ChessNode.js";
@@ -27,80 +28,98 @@ import { getFen } from "../src/model/getFen.js";
   scanConflicts(whiteNodes, true);
   scanConflicts(blackNodes, false);
 
-  const blitzLowExplore: CompactLichessExplore = JSON.parse(
-    fs.readFileSync("./src/data/lichessExploreBlitzLow.json", "utf8"),
-  );
+  const scan = async (
+    filename: string,
+    type: LichessExploreType,
+    includeExpansion: boolean,
+  ) => {
+    const blitzLowExplore: CompactLichessExplore = JSON.parse(
+      fs.readFileSync(`./src/data/${filename}.json`, "utf8"),
+    );
 
-  const histories: Move[][] = [[]];
+    const histories: Move[][] = [[]];
 
-  while (histories.length) {
-    const history = histories.shift();
+    while (histories.length) {
+      const history = histories.shift();
 
-    const board = new Chess();
-    history.forEach((move) => {
-      board.move(move);
-    });
+      const board = new Chess();
+      history.forEach((move) => {
+        board.move(move);
+      });
 
-    const fen = getFen(board);
+      const fen = getFen(board);
 
-    const whiteNode = whiteNodes[fen];
-    const blackNode = blackNodes[fen];
+      const whiteNode = whiteNodes[fen];
+      const blackNode = blackNodes[fen];
 
-    let moves: Move[] = [];
+      let moves: Move[] = [];
 
-    if (whiteNode) {
-      moves.push(...whiteNode.moves);
-    }
-    if (blackNode) {
-      moves.push(...blackNode.moves);
-    }
-    moves = _.uniq(moves);
+      if (whiteNode) {
+        moves.push(...whiteNode.moves);
+      }
+      if (blackNode) {
+        moves.push(...blackNode.moves);
+      }
+      moves = _.uniq(moves);
+      if (includeExpansion && (whiteNode || blackNode)) {
+        // Include all moves if we have a node and we are including expansions
+        moves = board.moves();
+      }
 
-    // Set up the future
-    for (const move of moves) {
-      histories.push([...history, move]);
-    }
+      // Set up the future
+      for (const move of moves) {
+        histories.push([...history, move]);
+      }
 
-    let explore = blitzLowExplore;
+      let explore = blitzLowExplore;
 
-    // console.log(`checking ${history.join(" ")}`);
+      // console.log(`checking ${history.join(" ")}`);
 
-    const appliedMoves: Move[] = [];
-    const appliedBoard = new Chess();
-    for (const move of history) {
-      explore = explore.m[move];
-      appliedMoves.push(move);
-      appliedBoard.move(move);
+      const appliedMoves: Move[] = [];
+      const appliedBoard = new Chess();
+      for (const move of history) {
+        explore = explore.m[move];
+        appliedMoves.push(move);
+        appliedBoard.move(move);
 
-      if (!explore.m) {
-        await sleep(5000);
+        if (!explore.m) {
+          await sleep(5000);
 
-        console.log(`${appliedMoves.join(" ")}`);
+          console.log(
+            `${type} ${includeExpansion ? "expand " : ""}${appliedMoves.join(" ")}`,
+          );
 
-        const data = await getLichessExplore(appliedMoves);
+          const data = await getLichessExplore(appliedMoves, type);
 
-        explore.m = {};
+          explore.m = {};
 
-        for (const exploreMove of data.moves) {
-          explore.m[exploreMove.san] = {
-            d: [exploreMove.white, exploreMove.draws, exploreMove.black],
-          };
+          for (const exploreMove of data.moves) {
+            explore.m[exploreMove.san] = {
+              d: [exploreMove.white, exploreMove.draws, exploreMove.black],
+            };
+          }
+
+          fs.writeFileSync(
+            `./src/data/${filename}.json`,
+            JSON.stringify(blitzLowExplore),
+          );
         }
 
-        fs.writeFileSync(
-          "./src/data/lichessExploreBlitzLow.json",
-          JSON.stringify(blitzLowExplore),
-        );
-      }
-
-      // Patch in moves that are "missing"
-      const availableMoves = appliedBoard.moves();
-      const missingMoves = availableMoves.filter((move) => !explore.m[move]);
-      for (const missingMove of missingMoves) {
-        explore.m[missingMove] = {
-          d: [0, 0, 0],
-        };
+        // Patch in moves that are "missing"
+        const availableMoves = appliedBoard.moves();
+        const missingMoves = availableMoves.filter((move) => !explore.m[move]);
+        for (const missingMove of missingMoves) {
+          explore.m[missingMove] = {
+            d: [0, 0, 0],
+          };
+        }
       }
     }
-  }
+  };
+
+  await scan("lichessExploreBlitzLow", "blitzLow");
+  await scan("lichessExploreMasters", "masters");
+  await scan("lichessExploreBlitzHigh", "blitzHigh");
+  await scan("lichessExploreRapidLow", "rapidLow");
+  await scan("lichessExploreRapidHigh", "rapidHigh");
 })();

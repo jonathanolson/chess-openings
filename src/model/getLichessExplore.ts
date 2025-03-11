@@ -17,9 +17,11 @@ export type CompactLichessExplore = {
   m?: Record<Move, CompactLichessExplore>;
 };
 
+export type LichessExploreType = keyof typeof lichessExploreTypeMap;
+
 export const getLichessExplore = async (
   history: Move[],
-  type: keyof typeof lichessExploreTypeMap = "blitzLow",
+  type: LichessExploreType = "blitzLow",
 ): Promise<LichessExplore> => {
   const key = history.join(",") + "," + type;
   if (lichessExplore[key]) {
@@ -45,3 +47,5 @@ export const getLichessExplore = async (
 
   return lichessExplore[key];
 };
+
+window.getLichessExplore = getLichessExplore;
