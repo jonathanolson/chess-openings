@@ -874,19 +874,18 @@ window.Chess = Chess;
     (lastDrill) => !!lastDrill,
   );
 
-  const lastDrillOpeningNameProperty = new Property("-");
-  const updateLastDrillOpeningName = () => {
-    const lastDrill = model.lastDrillProperty.value;
-    if (lastDrill) {
-      const openingName =
-        lastDrill[lastDrill.length - 1]?.lichessExplore?.opening.name;
-      lastDrillOpeningNameProperty.value = openingName || "-";
-    } else {
-      lastDrillOpeningNameProperty.value = "-";
-    }
-  };
-  model.lastDrillProperty.lazyLink(updateLastDrillOpeningName);
-  stackLichessUpdatedEmitter.addListener(updateLastDrillOpeningName);
+  const lastDrillOpeningNameProperty = new DerivedProperty(
+    [model.lastDrillProperty],
+    (lastDrill) => {
+      if (lastDrill) {
+        return (
+          getOpeningInfo(lastDrill[lastDrill.length - 1].history)?.name ?? "-"
+        );
+      } else {
+        return "-";
+      }
+    },
+  );
 
   const lastDrillNode = new FlowBox({
     orientation: "vertical",
