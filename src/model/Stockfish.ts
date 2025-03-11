@@ -1,6 +1,4 @@
-import { optionize } from "scenerystack/phet-core";
 import { getStockfishWorker } from "./getStockfishWorker.js";
-import { BooleanProperty, TProperty } from "scenerystack/axon";
 import { Fen, Move, VerboseMove } from "./common.js";
 import { Chess } from "chess.js";
 
@@ -91,32 +89,31 @@ type StockfishTask = {
 
 export class Stockfish {
   private readonly worker: Worker;
-  private readonly isLoadedProperty = new BooleanProperty(false);
-  private readonly isReadyProperty = new BooleanProperty(false);
+  private isLoaded: boolean = false;
+  private isReady: boolean = false;
   private readonly taskQueue: StockfishTask[] = [];
   private readonly infos: StockfishInfo[] = [];
   private currentTask: StockfishTask | null = null;
 
   public constructor(providedOptions?: StockfishOptions) {
-    const options = optionize<StockfishOptions>()(
-      {
-        hashSizeInMegabytes: 16, // TODO: decide on the best option?
-      },
-      providedOptions,
-    );
+    // TODO: decide on the best option?
+    const hashSizeInMegabytes = providedOptions?.hashSizeInMegabytes ?? 16;
 
     this.worker = getStockfishWorker();
 
     this.sendCommand("uci");
     this.sendCommand("isready");
     this.sendCommand("setoption name Use NNUE value true");
-    this.sendCommand(
-      `setoption name Hash value ${options.hashSizeInMegabytes}`,
-    );
+    this.sendCommand(`setoption name Hash value ${hashSizeInMegabytes}`);
 
     // https://gist.github.com/aliostad/f4470274f39d29b788c1b09519e67372
 
-    this.worker.addEventListener("message", this.onMessage.bind(this));
+    if (this.worker.addEventListener) {
+      this.worker.addEventListener("message", this.onMessage.bind(this));
+    } else {
+      // @ts-expect-error // worker_threads compatibility
+      this.worker.on("message", this.onMessage.bind(this));
+    }
   }
 
   public isBusy(): boolean {
@@ -137,7 +134,7 @@ export class Stockfish {
   public getPropertyEvaluation(
     fen: Fen,
     timeString: string,
-    resultProperty: TProperty<StockfishResult | null>,
+    resultProperty: { set value(value: StockfishResult | null) },
   ): Promise<StockfishResult> {
     return new Promise((resolve) => {
       this.taskQueue.push({
@@ -186,14 +183,15 @@ export class Stockfish {
   }
 
   private onMessage(event: MessageEvent): void {
-    const string = event.data as string;
+    const string =
+      typeof event === "string" ? (event as string) : (event.data as string);
     console.log(string);
 
     if (string === "uciok") {
-      this.isLoadedProperty.value = true;
+      this.isLoaded = true;
     }
     if (string === "readyok") {
-      this.isReadyProperty.value = true;
+      this.isReady = true;
     }
 
     const bits = string.split(" ");

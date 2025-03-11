@@ -16,6 +16,15 @@ const config = {
 
   server: {},
 
+  build: {
+    rollupOptions: {
+      input: {
+        main: "index.html",
+        hooks: "hooks.html",
+      },
+    },
+  },
+
   plugins: [
     VitePWA({
       registerType: "autoUpdate",
