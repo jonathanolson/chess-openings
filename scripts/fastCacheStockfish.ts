@@ -11,6 +11,8 @@ import os from "os";
 import { Fen } from "../src/model/common.js";
 // @ts-expect-error Some options
 import child_process from "child_process";
+import { Chess } from "chess.js";
+import { getFen } from "../src/model/getFen.js";
 
 // npx tsx scripts/cacheStockfish.ts
 
@@ -35,10 +37,35 @@ type StockfishData = Record<Fen, StockfishEntry>;
   scanConflicts(whiteNodes, true);
   scanConflicts(blackNodes, false);
 
-  // shuffle helps for parallelization (fewer conflicts)
-  const fens = _.shuffle(
-    _.uniq([...Object.keys(whiteNodes), ...Object.keys(blackNodes)]),
-  );
+  // Find all of the potential "next" moves
+  const fenExtend = (fens: Fen[]): Fen[] =>
+    fens.flatMap((fen) => {
+      const rootBoard = new Chess(fen);
+      return rootBoard.moves().map((move) => {
+        const board = new Chess(fen);
+        board.move(move);
+
+        return getFen(board);
+      });
+    });
+
+  const whiteFens = Object.keys(whiteNodes);
+  const blackFens = Object.keys(blackNodes);
+  const whiteExtendedFens = fenExtend(whiteFens);
+  const blackExtendedFens = fenExtend(blackFens);
+
+  const fens = _.uniq([
+    ...whiteFens,
+    ...blackFens,
+    ...whiteExtendedFens,
+    ...blackExtendedFens,
+  ]);
+
+  console.log(`whiteFens: ${whiteFens.length}`);
+  console.log(`blackFens: ${blackFens.length}`);
+  console.log(`whiteExtendedFens: ${whiteExtendedFens.length}`);
+  console.log(`blackExtendedFens: ${blackExtendedFens.length}`);
+  console.log(`total: ${fens.length}`);
 
   const getStockfishData = (): StockfishData => {
     return JSON.parse(fs.readFileSync("./src/data/stockfish.json", "utf8"));
@@ -57,8 +84,7 @@ type StockfishData = Record<Fen, StockfishEntry>;
     throw error;
   });
   process.stdout.on("data", (data) => {
-    console.log("data");
-    console.log(data.toString());
+    // console.log(data.toString());
   });
 
   const sendCommand = (cmd: string) => process.stdin.write(cmd + "\n");
@@ -79,39 +105,50 @@ type StockfishData = Record<Fen, StockfishEntry>;
       const handler = (data: Buffer) => {
         const output = data.toString();
 
-        // Extract the last depth and score from "info depth" lines
-        const infoMatch = output.match(
-          /info depth (\d+) .*? score (cp|mate) (-?\d+)/,
-        );
-        if (infoMatch) {
-          const depth = parseInt(infoMatch[1], 10);
-          const type = infoMatch[2];
-          const value = parseInt(infoMatch[3], 10);
+        const lines = output
+          .split("\n")
+          .map((s) => s.trim())
+          .filter((s) => s.length > 0);
 
-          const result: StockfishEntry = {
-            d: depth,
-            s: value,
-          };
-          if (type === "mate") {
-            result.m = "mate";
+        for (const line of lines) {
+          // Extract the last depth and score from "info depth" lines
+          const infoMatch = line.match(
+            /info depth (\d+) .*? score (cp|mate) (-?\d+)/,
+          );
+          if (infoMatch) {
+            const depth = parseInt(infoMatch[1], 10);
+            const type = infoMatch[2];
+            const value = parseInt(infoMatch[3], 10);
+
+            const result: StockfishEntry = {
+              d: depth,
+              s: value,
+            };
+            if (type === "mate") {
+              result.m = "mate";
+            }
+
+            const move = line.match(/ pv ([^ \n]+)/)?.[1] ?? null;
+
+            console.log(move, result);
+
+            entry = result;
+            entryLine = line;
           }
 
-          entry = result;
-          entryLine = output;
-        }
+          const bestmoveMatch = line.match(/bestmove ([^ \n]+)/);
+          if (bestmoveMatch) {
+            const move = bestmoveMatch[1];
 
-        const bestmoveMatch = output.match(/bestmove ([^ ]+)/);
-        if (bestmoveMatch) {
-          const move = bestmoveMatch[1];
+            if (!entryLine.includes(` pv ${move}`)) {
+              throw new Error(
+                `Best move ${move} not found in entry line ${entryLine}`,
+              );
+            }
 
-          if (!entryLine.includes(` pv ${move}`)) {
-            throw new Error(
-              `Best move ${move} not found in entry line ${entryLine}`,
-            );
+            process.stdout.off("data", handler); // Remove listener after first response
+            resolve(entry);
           }
-
-          process.stdout.off("data", handler); // Remove listener after first response
-          resolve(entry);
         }
       };
 
@@ -124,6 +161,7 @@ type StockfishData = Record<Fen, StockfishEntry>;
 
     if (fen) {
       console.log(fen);
+      console.log(fens.indexOf(fen));
 
       const entry = await evaluateFen(fen);
 

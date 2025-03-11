@@ -15,7 +15,7 @@ import {
 } from "./puppeteer-tools.js";
 import { Fen } from "../src/model/common.js";
 
-// npx tsx scripts/cacheStockfish.ts
+// npx tsx scripts/slowCacheStockfish.ts
 
 const depth = 24;
 

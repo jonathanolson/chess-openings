@@ -62,29 +62,45 @@ import { getFen } from "../src/model/getFen.js";
     }
 
     let explore = blitzLowExplore;
+
+    // console.log(`checking ${history.join(" ")}`);
+
+    const appliedMoves: Move[] = [];
+    const appliedBoard = new Chess();
     for (const move of history) {
       explore = explore.m[move];
-    }
+      appliedMoves.push(move);
+      appliedBoard.move(move);
 
-    if (!explore.m) {
-      await sleep(5000);
+      if (!explore.m) {
+        await sleep(5000);
 
-      console.log(`${history.join(" ")}`);
+        console.log(`${appliedMoves.join(" ")}`);
 
-      const data = await getLichessExplore(history);
+        const data = await getLichessExplore(appliedMoves);
 
-      explore.m = {};
+        explore.m = {};
 
-      for (const exploreMove of data.moves) {
-        explore.m[exploreMove.san] = {
-          d: [exploreMove.white, exploreMove.draws, exploreMove.black],
-        };
+        for (const exploreMove of data.moves) {
+          explore.m[exploreMove.san] = {
+            d: [exploreMove.white, exploreMove.draws, exploreMove.black],
+          };
+        }
+
+        fs.writeFileSync(
+          "./src/data/lichessExploreBlitzLow.json",
+          JSON.stringify(blitzLowExplore),
+        );
       }
 
-      fs.writeFileSync(
-        "./src/data/lichessExploreBlitzLow.json",
-        JSON.stringify(blitzLowExplore),
-      );
+      // Patch in moves that are "missing"
+      const availableMoves = appliedBoard.moves();
+      const missingMoves = availableMoves.filter((move) => !explore.m[move]);
+      for (const missingMove of missingMoves) {
+        explore.m[missingMove] = {
+          d: [0, 0, 0],
+        };
+      }
     }
   }
 })();

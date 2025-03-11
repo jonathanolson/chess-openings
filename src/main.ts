@@ -77,7 +77,6 @@ import { StackNode } from "./view/StackNode.js";
 import { defaultLichess } from "./data/defaultLichess.js";
 import { Model } from "./model/Model.js";
 import { glassPane, TooltipListener, ViewContext } from "scenery-toolkit";
-import { Stockfish, StockfishResult } from "./model/Stockfish.js";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
@@ -980,16 +979,4 @@ window.Chess = Chess;
       console.log(`persisted: ${await navigator.storage.persisted()}`);
     })();
   }
-
-  const stockfish = new Stockfish();
-  window.stockfish = stockfish;
-
-  const resultProperty = new Property<StockfishResult | null>(null);
-  resultProperty.lazyLink((result) => console.log(result));
-  await stockfish.getPropertyEvaluation(
-    "rnbqkbnr/p3pppp/2p5/1p6/P1pPP3/8/1P3PPP/RNBQKBNR w KQkq - 0 1",
-    "depth 24",
-    resultProperty,
-  );
-  console.log("finished");
 })();
