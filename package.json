@@ -11,7 +11,7 @@
     "build": "npx tsc && npx vite build"
   },
   "dependencies": {
-    "scenerystack": "0.0.31",
+    "scenerystack": "1.0.0",
     "scenery-fontawesome-5": "^0.0.2",
     "chess.js": "^1.0.0",
     "chessground": "^9.1.1",
