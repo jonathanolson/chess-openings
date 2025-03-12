@@ -4,6 +4,7 @@ import { Fen, LichessExplore, Move, VerboseMove } from "./common";
 import { assert } from "scenerystack/assert";
 import { getFen } from "./getFen";
 import { getLichessExplore } from "./getLichessExplore.js";
+import type { LichessExploreSummary } from "./getLichessExplore.js";
 import { ChessNode, Nodes } from "./ChessNode.js";
 
 export const stackLichessUpdatedEmitter = new TinyEmitter();
@@ -14,6 +15,7 @@ export class StackMove {
   public move: Move;
   public history: Move[];
   public lichessExplore: LichessExplore | null = null;
+  public lichessSummary: LichessExploreSummary | null = null;
 
   public constructor(board: Chess, previousHistory: Move[]) {
     this.board = board;
@@ -33,6 +35,7 @@ export class StackMove {
     }
   }
 
+  // TODO: remove?
   public async requestLichess(): Promise<void> {
     if (!this.lichessExplore) {
       this.lichessExplore = await getLichessExplore(this.history);

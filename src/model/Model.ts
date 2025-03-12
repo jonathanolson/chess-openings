@@ -67,8 +67,6 @@ export class Model {
 
     this.selectedStackMoveProperty.link((stackMove: StackMove | null) => {
       if (stackMove) {
-        stackMove.requestLichess();
-
         this.boardProperty.value = stackMove.board;
       } else {
         this.boardProperty.value = new Chess();
@@ -297,11 +295,6 @@ export class Model {
     } else {
       this.drillTargetStackProperty.value = random.sample(possibleStacks)!;
     }
-
-    // Request the name
-    this.drillTargetStackProperty.value[
-      this.drillTargetStackProperty.value.length - 1
-    ].requestLichess();
 
     this.stackPositionProperty.value = 0;
     this.stackProperty.value = this.drillBaseStackProperty.value.slice();

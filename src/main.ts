@@ -19,7 +19,6 @@ import {
   Text,
 } from "scenerystack/scenery";
 import { Chess, SQUARES } from "chess.js";
-import _ from "lodash";
 import { Chessground } from "chessground";
 import {
   AquaRadioButtonGroup,
@@ -46,13 +45,7 @@ import {
   thumbsUpSolidShape,
 } from "scenery-fontawesome-5";
 import chessOpenings from "./data/chessOpenings";
-import {
-  LichessExplore,
-  Move,
-  SaveState,
-  Square,
-  VerboseMove,
-} from "./model/common";
+import { Move, SaveState, Square, VerboseMove } from "./model/common";
 import { getFen } from "./model/getFen";
 import { Nodes } from "./model/ChessNode";
 import { initialFen } from "./model/initialFen";
@@ -74,10 +67,13 @@ import {
   unboldFont,
 } from "./view/theme.js";
 import { StackNode } from "./view/StackNode.js";
-import { defaultLichess } from "./data/defaultLichess.js";
 import { Model } from "./model/Model.js";
 import { glassPane, TooltipListener, ViewContext } from "scenery-toolkit";
 import { getOpeningInfo } from "./model/getOpeningInfo.js";
+import {
+  getCompactLichessExplore,
+  LichessExploreWins,
+} from "./model/getLichessExplore.js";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
@@ -623,245 +619,269 @@ window.Chess = Chess;
   });
   const updateMoveNode = () => {
     const stackMove = model.selectedStackMoveProperty.value;
-    const lichessExplore = stackMove
-      ? stackMove.lichessExplore
-      : defaultLichess;
     const fen = stackMove ? getFen(stackMove.board) : initialFen;
     const node = model.nodesProperty.value[fen];
 
     moveContainer.removeAllChildren();
 
-    if (!node && !lichessExplore) {
-      moveContainer.children = [];
-    } else {
-      const moves = [];
+    // TODO: determine perhaps storing summaries by... the type? We will want to change the type, no?
+    let lichessSummary = stackMove?.lichessSummary ?? null;
 
-      if (lichessExplore) {
-        const lichessMoves = lichessExplore.moves.map((move) => move.san);
+    if (!lichessSummary) {
+      const possibleSummary = getCompactLichessExplore(
+        stackMove?.history ?? [],
+        "blitzLow",
+      );
 
-        if (node) {
-          // in both (lichess order)
-          moves.push(
-            ...lichessMoves.filter((move) => node.moves.includes(move)),
-          );
-
-          // in our moves only (our order)
-          moves.push(
-            ...node.moves.filter((move) => !lichessMoves.includes(move)),
-          );
-
-          // in lichess only (lichess order)
-          moves.push(
-            ...lichessMoves.filter((move) => !node.moves.includes(move)),
-          );
-        } else {
-          moves.push(...lichessMoves);
-        }
-      } else {
-        moves.push(...node.moves);
-      }
-
-      const openingInfo = stackMove ? getOpeningInfo(stackMove.history) : null;
-      console.log(stackMove?.history);
-      console.log(openingInfo);
-      console.log(fen);
-
-      if (openingInfo) {
-        selectedOpeningNameProperty.value = openingInfo.name;
-      } else {
-        selectedOpeningNameProperty.reset();
-      }
-
-      moveContainer.children = moveContainer.children.concat(
-        moves.map((move, i) => {
-          const lichessMove: LichessExplore["moves"][number] | null =
-            lichessExplore
-              ? _.find(lichessExplore.moves, (m) => m.san === move) || null
-              : null;
-          const isIncludedInTree = node && node.moves.includes(move);
-          const moveNode = isIncludedInTree ? node.getChildNode(move) : null;
-
-          const barWidth = 150;
-          const barHeight = 15;
-
-          const bar = new Rectangle(0, 0, barWidth, barHeight, {
-            layoutOptions: { column: 1, row: 0 },
-          });
-          if (lichessMove) {
-            const stroke = "#888";
-            const whiteFill = "#fff";
-            const drawFill = "#888";
-            const blackFill = "#000";
-
-            const total =
-              lichessMove.white + lichessMove.black + lichessMove.draws;
-            const toX = (count: number) => (barWidth * count) / total;
-            if (model.boardProperty.value.turn() === "w") {
-              bar.addChild(
-                Rectangle.bounds(
-                  new Bounds2(toX(0), 0, toX(lichessMove.white), barHeight),
-                  {
-                    fill: whiteFill,
-                    stroke: stroke,
-                  },
-                ),
-              );
-              bar.addChild(
-                Rectangle.bounds(
-                  new Bounds2(
-                    toX(lichessMove.white),
-                    0,
-                    toX(lichessMove.white + lichessMove.draws),
-                    barHeight,
-                  ),
-                  {
-                    fill: drawFill,
-                    stroke: stroke,
-                  },
-                ),
-              );
-              bar.addChild(
-                Rectangle.bounds(
-                  new Bounds2(
-                    toX(lichessMove.white + lichessMove.draws),
-                    0,
-                    toX(total),
-                    barHeight,
-                  ),
-                  {
-                    fill: blackFill,
-                    stroke: stroke,
-                  },
-                ),
-              );
-            } else {
-              bar.addChild(
-                Rectangle.bounds(
-                  new Bounds2(toX(0), 0, toX(lichessMove.black), barHeight),
-                  {
-                    fill: blackFill,
-                    stroke: stroke,
-                  },
-                ),
-              );
-              bar.addChild(
-                Rectangle.bounds(
-                  new Bounds2(
-                    toX(lichessMove.black),
-                    0,
-                    toX(lichessMove.black + lichessMove.draws),
-                    barHeight,
-                  ),
-                  {
-                    fill: drawFill,
-                    stroke: stroke,
-                  },
-                ),
-              );
-              bar.addChild(
-                Rectangle.bounds(
-                  new Bounds2(
-                    toX(lichessMove.black + lichessMove.draws),
-                    0,
-                    toX(total),
-                    barHeight,
-                  ),
-                  {
-                    fill: whiteFill,
-                    stroke: stroke,
-                  },
-                ),
-              );
-            }
+      if (possibleSummary instanceof Promise) {
+        possibleSummary.then((summary) => {
+          if (stackMove) {
+            stackMove.lichessSummary = summary;
+            stackLichessUpdatedEmitter.emit();
           }
+        });
+      } else {
+        lichessSummary = possibleSummary;
+        if (stackMove) {
+          stackMove.lichessSummary = lichessSummary;
+        }
+      }
+    }
 
-          const gridBox = new GridBox({
-            spacing: 10,
-            children: [
-              new Text(move, {
-                font: isIncludedInTree ? boldFont : unboldFont,
-                layoutOptions: {
-                  column: 0,
-                  row: 0,
-                  minContentWidth: 55,
-                  xAlign: "left",
-                },
-              }),
-              bar,
-              new Text(
-                lichessMove
-                  ? lichessMove.white + lichessMove.black + lichessMove.draws
-                  : "",
-                {
-                  font: unboldFont,
-                  layoutOptions: {
-                    column: 2,
-                    row: 0,
-                    minContentWidth: 60,
-                    xAlign: "left",
-                  },
-                },
-              ),
-              new Text(
-                moveNode ? moveNode.getCumulativePriority().toFixed(2) : "-",
-                {
-                  font: unboldFont,
-                  layoutOptions: {
-                    column: 3,
-                    row: 0,
-                    minContentWidth: 40,
-                    xAlign: "left",
-                  },
-                },
-              ),
-            ],
-          });
+    const allMoves = stackMove?.board.moves() ?? new Chess().moves();
 
-          // TODO: handle hover to show these options easily
-          const fireListener = new FireListener({
-            fire: () => {
-              const afterBoard = new Chess(getFen(model.boardProperty.value));
-              afterBoard.move(move);
-              model.addMoveBoard(afterBoard);
-            },
-          });
+    const moves: Move[] = [];
 
-          fireListener.looksOverProperty.lazyLink((looksOver) => {
-            if (looksOver) {
-              model.hoveredPotentialVerboseMoveProperty.value = new Chess(
-                getFen(model.boardProperty.value),
-              ).move(move);
-            } else {
-              model.hoveredPotentialVerboseMoveProperty.value = null;
-            }
-          });
-
-          const backgroundProperty = new DerivedProperty(
-            [fireListener.looksOverProperty],
-            (looksOver) => {
-              const isEven = i % 2 === 0;
-
-              if (isIncludedInTree) {
-                return looksOver ? "#4af" : isEven ? "#9cf" : "#bdf";
-              } else {
-                return looksOver ? "#ccc" : isEven ? "#ddd" : "#eee";
-              }
-            },
-          );
-
-          return new Node({
-            cursor: "pointer",
-            inputListeners: [fireListener],
-            children: [
-              Rectangle.bounds(gridBox.bounds.dilatedXY(5, 2), {
-                fill: backgroundProperty,
-              }),
-              gridBox,
-            ],
-          });
-        }),
+    // in both (lichess order)
+    if (lichessSummary && node) {
+      moves.push(
+        ...Object.keys(lichessSummary).filter((move) =>
+          node.moves.includes(move),
+        ),
       );
     }
+
+    // in our moves only (our order)
+    if (node) {
+      moves.push(...node.moves.filter((move) => !moves.includes(move)));
+    }
+
+    // in lichess only (lichess order)
+    if (lichessSummary) {
+      moves.push(
+        ...Object.keys(lichessSummary).filter((move) => !moves.includes(move)),
+      );
+    }
+
+    // remaining moves
+    moves.push(...allMoves.filter((move) => !moves.includes(move)));
+
+    if (moves.length === 0) {
+      moveContainer.children = [];
+      return;
+    }
+
+    const openingInfo = stackMove ? getOpeningInfo(stackMove.history) : null;
+    console.log(stackMove?.history);
+    console.log(openingInfo);
+    console.log(fen);
+
+    if (openingInfo) {
+      selectedOpeningNameProperty.value = openingInfo.name;
+    } else {
+      selectedOpeningNameProperty.reset();
+    }
+
+    moveContainer.children = moveContainer.children.concat(
+      moves.map((move, i) => {
+        const lichessWins: LichessExploreWins | null =
+          lichessSummary?.[move] ?? null;
+
+        const isIncludedInTree = node && node.moves.includes(move);
+        const moveNode = isIncludedInTree ? node.getChildNode(move) : null;
+
+        const barWidth = 150;
+        const barHeight = 15;
+
+        const bar = new Rectangle(0, 0, barWidth, barHeight, {
+          layoutOptions: { column: 1, row: 0 },
+        });
+        if (lichessWins) {
+          const stroke = "#888";
+          const whiteFill = "#fff";
+          const drawFill = "#888";
+          const blackFill = "#000";
+
+          const total =
+            lichessWins.whiteWins + lichessWins.blackWins + lichessWins.draws;
+          const toX = (count: number) => (barWidth * count) / total;
+          if (model.boardProperty.value.turn() === "w") {
+            bar.addChild(
+              Rectangle.bounds(
+                new Bounds2(toX(0), 0, toX(lichessWins.whiteWins), barHeight),
+                {
+                  fill: whiteFill,
+                  stroke: stroke,
+                },
+              ),
+            );
+            bar.addChild(
+              Rectangle.bounds(
+                new Bounds2(
+                  toX(lichessWins.whiteWins),
+                  0,
+                  toX(lichessWins.whiteWins + lichessWins.draws),
+                  barHeight,
+                ),
+                {
+                  fill: drawFill,
+                  stroke: stroke,
+                },
+              ),
+            );
+            bar.addChild(
+              Rectangle.bounds(
+                new Bounds2(
+                  toX(lichessWins.whiteWins + lichessWins.draws),
+                  0,
+                  toX(total),
+                  barHeight,
+                ),
+                {
+                  fill: blackFill,
+                  stroke: stroke,
+                },
+              ),
+            );
+          } else {
+            bar.addChild(
+              Rectangle.bounds(
+                new Bounds2(toX(0), 0, toX(lichessWins.blackWins), barHeight),
+                {
+                  fill: blackFill,
+                  stroke: stroke,
+                },
+              ),
+            );
+            bar.addChild(
+              Rectangle.bounds(
+                new Bounds2(
+                  toX(lichessWins.blackWins),
+                  0,
+                  toX(lichessWins.blackWins + lichessWins.draws),
+                  barHeight,
+                ),
+                {
+                  fill: drawFill,
+                  stroke: stroke,
+                },
+              ),
+            );
+            bar.addChild(
+              Rectangle.bounds(
+                new Bounds2(
+                  toX(lichessWins.blackWins + lichessWins.draws),
+                  0,
+                  toX(total),
+                  barHeight,
+                ),
+                {
+                  fill: whiteFill,
+                  stroke: stroke,
+                },
+              ),
+            );
+          }
+        }
+
+        const gridBox = new GridBox({
+          spacing: 10,
+          children: [
+            new Text(move, {
+              font: isIncludedInTree ? boldFont : unboldFont,
+              layoutOptions: {
+                column: 0,
+                row: 0,
+                minContentWidth: 55,
+                xAlign: "left",
+              },
+            }),
+            bar,
+            new Text(
+              lichessWins
+                ? lichessWins.whiteWins +
+                  lichessWins.blackWins +
+                  lichessWins.draws
+                : "",
+              {
+                font: unboldFont,
+                layoutOptions: {
+                  column: 2,
+                  row: 0,
+                  minContentWidth: 60,
+                  xAlign: "left",
+                },
+              },
+            ),
+            new Text(
+              moveNode ? moveNode.getCumulativePriority().toFixed(2) : "-",
+              {
+                font: unboldFont,
+                layoutOptions: {
+                  column: 3,
+                  row: 0,
+                  minContentWidth: 40,
+                  xAlign: "left",
+                },
+              },
+            ),
+          ],
+        });
+
+        // TODO: handle hover to show these options easily
+        const fireListener = new FireListener({
+          fire: () => {
+            const afterBoard = new Chess(getFen(model.boardProperty.value));
+            afterBoard.move(move);
+            model.addMoveBoard(afterBoard);
+          },
+        });
+
+        fireListener.looksOverProperty.lazyLink((looksOver) => {
+          if (looksOver) {
+            model.hoveredPotentialVerboseMoveProperty.value = new Chess(
+              getFen(model.boardProperty.value),
+            ).move(move);
+          } else {
+            model.hoveredPotentialVerboseMoveProperty.value = null;
+          }
+        });
+
+        const backgroundProperty = new DerivedProperty(
+          [fireListener.looksOverProperty],
+          (looksOver) => {
+            const isEven = i % 2 === 0;
+
+            if (isIncludedInTree) {
+              return looksOver ? "#4af" : isEven ? "#9cf" : "#bdf";
+            } else {
+              return looksOver ? "#ccc" : isEven ? "#ddd" : "#eee";
+            }
+          },
+        );
+
+        return new Node({
+          cursor: "pointer",
+          inputListeners: [fireListener],
+          children: [
+            Rectangle.bounds(gridBox.bounds.dilatedXY(5, 2), {
+              fill: backgroundProperty,
+            }),
+            gridBox,
+          ],
+        });
+      }),
+    );
   };
 
   model.selectedStackMoveProperty.link(updateMoveNode);

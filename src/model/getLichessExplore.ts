@@ -1,5 +1,6 @@
 import { LichessExplore, Move } from "./common";
 import { getLichessMovesString } from "./getLichessMovesString.js";
+import lichessExploreBlitzLow from "../data/lichessExploreBlitzLow.json";
 
 export const lichessExplore: { [key: string]: LichessExplore } = {};
 
@@ -18,6 +19,68 @@ export type CompactLichessExplore = {
 };
 
 export type LichessExploreType = keyof typeof lichessExploreTypeMap;
+
+export type LichessExploreWins = {
+  whiteWins: number;
+  draws: number;
+  blackWins: number;
+};
+export type LichessExploreSummary = Record<Move, LichessExploreWins>;
+
+export const getCompactLichessExplore = (
+  history: Move[],
+  type: LichessExploreType,
+): LichessExploreSummary | Promise<LichessExploreSummary> => {
+  // TODO: do we separate this out to a different file due to the data dependency?
+
+  if (type === "blitzLow") {
+    let explore: CompactLichessExplore =
+      lichessExploreBlitzLow as unknown as CompactLichessExplore;
+
+    let success = true;
+    for (const move of history) {
+      if (!explore.m || !explore.m[move]) {
+        success = false;
+        break;
+      }
+
+      explore = explore.m[move];
+    }
+
+    if (success && explore.m) {
+      const summary: LichessExploreSummary = {};
+
+      for (const move of Object.keys(explore.m)) {
+        const data = explore.m[move].d;
+        summary[move] = {
+          whiteWins: data[0],
+          draws: data[1],
+          blackWins: data[2],
+        };
+      }
+
+      return summary;
+    }
+  }
+
+  return new Promise((resolve) => {
+    (async () => {
+      const lichessExplore = await getLichessExplore(history, type);
+
+      const summary: LichessExploreSummary = {};
+
+      for (const move of lichessExplore.moves) {
+        summary[move.san] = {
+          whiteWins: move.white,
+          draws: move.draws,
+          blackWins: move.black,
+        };
+      }
+
+      resolve(summary);
+    })();
+  });
+};
 
 export const getLichessExplore = async (
   history: Move[],
