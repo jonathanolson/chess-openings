@@ -11,12 +11,13 @@ import {
   Color,
   Display,
   FireListener,
-  FlowBox,
   GridBox,
+  HBox,
   Node,
   Path,
   Rectangle,
   Text,
+  VBox,
 } from "scenerystack/scenery";
 import { Chess, SQUARES } from "chess.js";
 import { Chessground } from "chessground";
@@ -454,8 +455,7 @@ window.Chess = Chess;
     (stackPosition: number, stack: StackMove[]) => stackPosition < stack.length,
   );
 
-  const controlButtons = new FlowBox({
-    orientation: "horizontal",
+  const controlButtons = new HBox({
     spacing: 5,
     children: [
       new RectangularPushButton({
@@ -504,8 +504,7 @@ window.Chess = Chess;
 
   const downloadBaseColor = new Property<Color>(Color.WHITE);
 
-  const fileButtons = new FlowBox({
-    orientation: "horizontal",
+  const fileButtons = new HBox({
     spacing: 5,
     children: [
       new RectangularPushButton({
@@ -551,8 +550,7 @@ window.Chess = Chess;
     button.addInputListener(genericTooltipListener),
   );
 
-  const drillButtons = new FlowBox({
-    orientation: "horizontal",
+  const drillButtons = new HBox({
     spacing: 5,
     children: [
       new RectangularPushButton({
@@ -611,8 +609,7 @@ window.Chess = Chess;
     visibleProperty: model.isNotDrillProperty,
   });
 
-  const moveContainer = new FlowBox({
-    orientation: "vertical",
+  const moveContainer = new VBox({
     align: "left",
     visibleProperty: model.isNotDrillProperty,
   });
@@ -802,13 +799,11 @@ window.Chess = Chess;
   const lastDrillNode = new LastDrillNode(model);
 
   mainContent.addChild(
-    new FlowBox({
-      orientation: "horizontal",
+    new HBox({
       spacing: 20,
       align: "top",
       children: [
-        new FlowBox({
-          orientation: "vertical",
+        new VBox({
           spacing: 5,
           children: [
             whiteBlackSwitch,
@@ -818,8 +813,7 @@ window.Chess = Chess;
             stackContainer,
           ],
         }),
-        new FlowBox({
-          orientation: "vertical",
+        new VBox({
           align: "left",
           spacing: 3,
           children: [fenText, openingNameText, moveContainer, lastDrillNode],

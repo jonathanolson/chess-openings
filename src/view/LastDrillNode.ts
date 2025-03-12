@@ -1,4 +1,4 @@
-import { FlowBox, Path, Text, VBox } from "scenerystack/scenery";
+import { HBox, Path, Text, VBox } from "scenerystack/scenery";
 import { Model } from "../model/Model";
 import { getOpeningInfo } from "../model/getOpeningInfo";
 import { DerivedProperty } from "scenerystack/axon";
@@ -37,8 +37,7 @@ export class LastDrillNode extends VBox {
           font: boldFont,
           visibleProperty: hasLastDrillProperty,
         }),
-        new FlowBox({
-          orientation: "horizontal",
+        new HBox({
           visibleProperty: hasLastDrillProperty,
           spacing: 5,
           children: [
