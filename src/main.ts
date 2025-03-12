@@ -11,7 +11,6 @@ import { StackMove } from "./model/StackMove.js";
 import { SignInNode } from "./view/SignInNode.js";
 import {
   loadUserState,
-  saveUserState,
   userLoadedPromise,
   userPromise,
   userProperty,
@@ -167,11 +166,6 @@ window.Chess = Chess;
   const model = new Model(usedChessOpenings, usedOnlineChessOpenings);
 
   new ChessgroundView(model, boardDiv);
-
-  // @ts-expect-error defining a global
-  window.manualSave = async (data) => {
-    await saveUserState(userProperty.value!.uid, data);
-  };
 
   const stackContainer = new Node();
   Multilink.multilink(

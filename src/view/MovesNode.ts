@@ -33,6 +33,11 @@ export class MovesNode extends VBox {
 
       this.removeAllChildren();
 
+      // Don't set things up if we are in a drill
+      if (!model.isNotDrillProperty.value) {
+        return;
+      }
+
       // TODO: determine perhaps storing summaries by... the type? We will want to change the type, no?
       let lichessSummary = stackMove?.lichessSummary ?? null;
 
@@ -201,6 +206,7 @@ export class MovesNode extends VBox {
     model.selectedStackMoveProperty.link(updateMoveNode);
     model.isWhiteProperty.lazyLink(updateMoveNode);
     model.nodesProperty.lazyLink(updateMoveNode);
+    model.isNotDrillProperty.lazyLink(updateMoveNode); // since we don't update when this is not true
     stackLichessUpdatedEmitter.addListener(updateMoveNode);
   }
 }

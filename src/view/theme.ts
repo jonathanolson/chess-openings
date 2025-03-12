@@ -1,7 +1,7 @@
 import { converter, formatHex, parse } from "culori";
 import { Color, Font, PaintDef, TColor } from "scenerystack/scenery";
 import { Vector2 } from "scenerystack/dot";
-import { DerivedProperty1 } from "scenerystack/axon";
+import { BooleanProperty, DerivedProperty2 } from "scenerystack/axon";
 import { isOSDarkModeProperty } from "scenery-toolkit";
 
 const nicePurpleK = converter("oklab")(parse("#c87adb"))!;
@@ -28,14 +28,21 @@ export const boldFont = new Font({
   weight: "bold",
 });
 
-class LightDarkColorProperty extends DerivedProperty1<Color, boolean> {
+export const reverseColorsProperty = new BooleanProperty(false);
+
+class LightDarkColorProperty extends DerivedProperty2<Color, boolean, boolean> {
   public constructor(
     public readonly lightColor: TColor,
     public readonly darkColor: TColor,
   ) {
-    super([isOSDarkModeProperty], (isDark) => {
-      return PaintDef.toColor(isDark ? darkColor : lightColor);
-    });
+    super(
+      [isOSDarkModeProperty, reverseColorsProperty],
+      (isDark, reverseColors) => {
+        return PaintDef.toColor(
+          isDark !== reverseColors ? darkColor : lightColor,
+        );
+      },
+    );
   }
 }
 

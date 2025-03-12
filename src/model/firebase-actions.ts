@@ -128,3 +128,8 @@ export async function loadUserState<T>(userId: string): Promise<T | null> {
     return null;
   }
 }
+
+// @ts-expect-error defining a global
+window.manualSave = async (data) => {
+  await saveUserState(userProperty.value!.uid, data);
+};

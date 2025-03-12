@@ -6,7 +6,7 @@ import {
   ButtonNode,
   RectangularPushButton,
 } from "scenerystack/sun";
-import { uiForegroundColorProperty } from "./theme.js";
+import { reverseColorsProperty, uiForegroundColorProperty } from "./theme.js";
 import { DerivedProperty } from "scenerystack/axon";
 import { StackMove } from "../model/StackMove.js";
 import {
@@ -16,6 +16,7 @@ import {
   eraserSolidShape,
   fileDownloadSolidShape,
   forwardSolidShape,
+  lightbulbSolidShape,
   lockSolidShape,
   runningSolidShape,
   saveSolidShape,
@@ -221,6 +222,24 @@ export class MainControlsNode extends VBox {
       button.addInputListener(genericTooltipListener),
     );
 
+    const debugButtons = new HBox({
+      spacing: 5,
+      children: [
+        new BooleanRectangularStickyToggleButton(reverseColorsProperty, {
+          content: new Path(lightbulbSolidShape, {
+            fill: "black",
+            scale: 0.03,
+          }),
+          accessibleName: "Toggle Light/Dark Colors",
+          baseColor: "#fff",
+          buttonAppearanceStrategy: ButtonNode.FlatAppearanceStrategy,
+        }),
+      ],
+    });
+    debugButtons.children.forEach((button) =>
+      button.addInputListener(genericTooltipListener),
+    );
+
     // TODO: move to somewhere more global perhaps? OR USE OUR SCENERY SUPPORT
     // Listen for the enter key press.
     document.body.addEventListener("keydown", (e) => {
@@ -236,7 +255,13 @@ export class MainControlsNode extends VBox {
 
     super({
       spacing: 5,
-      children: [whiteBlackSwitch, controlButtons, fileButtons, drillButtons],
+      children: [
+        whiteBlackSwitch,
+        controlButtons,
+        fileButtons,
+        drillButtons,
+        debugButtons,
+      ],
     });
   }
 }
