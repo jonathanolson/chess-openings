@@ -37,12 +37,9 @@ import {
   lockSolidShape,
   runningSolidShape,
   saveSolidShape,
-  searchSolidShape,
   signOutAltSolidShape,
   stepBackwardSolidShape,
   stepForwardSolidShape,
-  thumbsDownSolidShape,
-  thumbsUpSolidShape,
 } from "scenery-fontawesome-5";
 import chessOpenings from "./data/chessOpenings";
 import { Move, SaveState, Square, VerboseMove } from "./model/common";
@@ -75,6 +72,7 @@ import {
   LichessExploreWins,
 } from "./model/getLichessExplore.js";
 import { WinStatisticsBar } from "./view/WinStatisticsBar.js";
+import { LastDrillNode } from "./view/LastDrillNode.js";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
@@ -801,65 +799,7 @@ window.Chess = Chess;
   model.nodesProperty.lazyLink(updateMoveNode);
   stackLichessUpdatedEmitter.addListener(updateMoveNode);
 
-  const hasLastDrillProperty = new DerivedProperty(
-    [model.lastDrillProperty],
-    (lastDrill) => !!lastDrill,
-  );
-
-  const lastDrillOpeningNameProperty = new DerivedProperty(
-    [model.lastDrillProperty],
-    (lastDrill) => {
-      if (lastDrill) {
-        return (
-          getOpeningInfo(lastDrill[lastDrill.length - 1].history)?.name ?? "-"
-        );
-      } else {
-        return "-";
-      }
-    },
-  );
-
-  const lastDrillNode = new FlowBox({
-    orientation: "vertical",
-    spacing: 10,
-    children: [
-      new Text(lastDrillOpeningNameProperty, {
-        font: boldFont,
-        visibleProperty: hasLastDrillProperty,
-      }),
-      new FlowBox({
-        orientation: "horizontal",
-        visibleProperty: hasLastDrillProperty,
-        spacing: 5,
-        children: [
-          new RectangularPushButton({
-            content: new Path(searchSolidShape, { fill: "black", scale: 0.03 }),
-            listener: () => model.examineDrill(),
-            baseColor: "#fff",
-            buttonAppearanceStrategy: ButtonNode.FlatAppearanceStrategy,
-          }),
-          new RectangularPushButton({
-            content: new Path(thumbsUpSolidShape, {
-              fill: "black",
-              scale: 0.03,
-            }),
-            listener: () => model.makeDrillEasier(),
-            baseColor: "#fff",
-            buttonAppearanceStrategy: ButtonNode.FlatAppearanceStrategy,
-          }),
-          new RectangularPushButton({
-            content: new Path(thumbsDownSolidShape, {
-              fill: "black",
-              scale: 0.03,
-            }),
-            listener: () => model.makeDrillHarder(),
-            baseColor: "#fff",
-            buttonAppearanceStrategy: ButtonNode.FlatAppearanceStrategy,
-          }),
-        ],
-      }),
-    ],
-  });
+  const lastDrillNode = new LastDrillNode(model);
 
   mainContent.addChild(
     new FlowBox({
