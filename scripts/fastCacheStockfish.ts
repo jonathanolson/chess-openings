@@ -75,7 +75,10 @@ type StockfishData = Record<Fen, StockfishEntry>;
 
   const getNextFen = () => {
     const data = getStockfishData();
-    return fens.find((fen) => !data[fen] || data[fen].d < depth);
+
+    // NOTE: depth returned for checkmates can be zero (!) Could re-enable this in the future maybe.
+    return fens.find((fen) => !data[fen]);
+    // return fens.find((fen) => !data[fen] || data[fen].d < depth);
   };
 
   const process = child_process.spawn("./.stockfish", [], {
@@ -115,7 +118,7 @@ type StockfishData = Record<Fen, StockfishEntry>;
         for (const line of lines) {
           // Extract the last depth and score from "info depth" lines
           const infoMatch = line.match(
-            /info depth (\d+) .*? score (cp|mate) (-?\d+)/,
+            /info depth (\d+) .*? ?score (cp|mate) (-?\d+)/,
           );
           if (infoMatch) {
             const depth = parseInt(infoMatch[1], 10);
@@ -142,7 +145,7 @@ type StockfishData = Record<Fen, StockfishEntry>;
           if (bestmoveMatch) {
             const move = bestmoveMatch[1];
 
-            if (!entryLine.includes(` pv ${move}`)) {
+            if (move !== "(none)" && !entryLine.includes(` pv ${move}`)) {
               throw new Error(
                 `Best move ${move} not found in entry line ${entryLine}`,
               );
