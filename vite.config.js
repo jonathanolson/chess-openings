@@ -31,8 +31,8 @@ const config = {
     VitePWA({
       registerType: "autoUpdate",
       workbox: {
-        // Increase precache limit to e.g. 4 MB
-        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
+        // Increase precache limit to e.g. 12 MB
+        maximumFileSizeToCacheInBytes: 12 * 1024 * 1024,
         globPatterns: ["**/*.{js,css,html,ico,png,svg}"],
       },
       manifest: {
