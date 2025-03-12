@@ -1,5 +1,5 @@
 import { Color, HBox, Path, Text, VBox } from "scenerystack/scenery";
-import SaveStatus, { Model } from "../model/Model";
+import { Model, SaveStatus } from "../model/Model";
 import {
   AquaRadioButtonGroup,
   BooleanRectangularStickyToggleButton,

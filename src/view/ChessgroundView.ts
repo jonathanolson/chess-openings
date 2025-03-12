@@ -4,7 +4,7 @@ import { Move, Square, VerboseMove } from "../model/common";
 import { getFen } from "../model/getFen.js";
 import { Multilink } from "scenerystack/axon";
 import { Nodes } from "../model/ChessNode.js";
-import Model from "../model/Model.js";
+import { Model } from "../model/Model.js";
 
 export class ChessgroundView {
   public constructor(model: Model, boardDiv: HTMLDivElement) {

@@ -21,7 +21,7 @@ import { saveUserState, userProperty } from "./firebase-actions.js";
 
 const random = new Random();
 
-export default class SaveStatus extends EnumerationValue {
+export class SaveStatus extends EnumerationValue {
   public static readonly NORMAL = new SaveStatus();
   public static readonly SAVING = new SaveStatus();
   public static readonly SUCCESS = new SaveStatus();
