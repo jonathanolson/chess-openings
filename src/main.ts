@@ -74,6 +74,7 @@ import {
   getCompactLichessExplore,
   LichessExploreWins,
 } from "./model/getLichessExplore.js";
+import { WinStatisticsBar } from "./view/WinStatisticsBar.js";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
@@ -682,9 +683,6 @@ window.Chess = Chess;
     }
 
     const openingInfo = stackMove ? getOpeningInfo(stackMove.history) : null;
-    console.log(stackMove?.history);
-    console.log(openingInfo);
-    console.log(fen);
 
     if (openingInfo) {
       selectedOpeningNameProperty.value = openingInfo.name;
@@ -700,99 +698,13 @@ window.Chess = Chess;
         const isIncludedInTree = node && node.moves.includes(move);
         const moveNode = isIncludedInTree ? node.getChildNode(move) : null;
 
-        const barWidth = 150;
-        const barHeight = 15;
-
-        const bar = new Rectangle(0, 0, barWidth, barHeight, {
-          layoutOptions: { column: 1, row: 0 },
-        });
-        if (lichessWins) {
-          const stroke = "#888";
-          const whiteFill = "#fff";
-          const drawFill = "#888";
-          const blackFill = "#000";
-
-          const total =
-            lichessWins.whiteWins + lichessWins.blackWins + lichessWins.draws;
-          const toX = (count: number) => (barWidth * count) / total;
-          if (model.boardProperty.value.turn() === "w") {
-            bar.addChild(
-              Rectangle.bounds(
-                new Bounds2(toX(0), 0, toX(lichessWins.whiteWins), barHeight),
-                {
-                  fill: whiteFill,
-                  stroke: stroke,
-                },
-              ),
-            );
-            bar.addChild(
-              Rectangle.bounds(
-                new Bounds2(
-                  toX(lichessWins.whiteWins),
-                  0,
-                  toX(lichessWins.whiteWins + lichessWins.draws),
-                  barHeight,
-                ),
-                {
-                  fill: drawFill,
-                  stroke: stroke,
-                },
-              ),
-            );
-            bar.addChild(
-              Rectangle.bounds(
-                new Bounds2(
-                  toX(lichessWins.whiteWins + lichessWins.draws),
-                  0,
-                  toX(total),
-                  barHeight,
-                ),
-                {
-                  fill: blackFill,
-                  stroke: stroke,
-                },
-              ),
-            );
-          } else {
-            bar.addChild(
-              Rectangle.bounds(
-                new Bounds2(toX(0), 0, toX(lichessWins.blackWins), barHeight),
-                {
-                  fill: blackFill,
-                  stroke: stroke,
-                },
-              ),
-            );
-            bar.addChild(
-              Rectangle.bounds(
-                new Bounds2(
-                  toX(lichessWins.blackWins),
-                  0,
-                  toX(lichessWins.blackWins + lichessWins.draws),
-                  barHeight,
-                ),
-                {
-                  fill: drawFill,
-                  stroke: stroke,
-                },
-              ),
-            );
-            bar.addChild(
-              Rectangle.bounds(
-                new Bounds2(
-                  toX(lichessWins.blackWins + lichessWins.draws),
-                  0,
-                  toX(total),
-                  barHeight,
-                ),
-                {
-                  fill: whiteFill,
-                  stroke: stroke,
-                },
-              ),
-            );
-          }
-        }
+        const bar = new WinStatisticsBar(
+          lichessWins,
+          model.isWhiteProperty.value,
+          {
+            layoutOptions: { column: 1, row: 0 },
+          },
+        );
 
         const gridBox = new GridBox({
           spacing: 10,
