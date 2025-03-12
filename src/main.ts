@@ -448,21 +448,4 @@ window.Chess = Chess;
     }
   });
   document.body.appendChild(pgnInput);
-
-  if (window.caches) {
-    (async () => {
-      (await caches.open("pwa-assets")).addAll([
-        "../build/chess-openings.html",
-        "../contrib/chessground-examples-assets/chessground.css",
-        "../contrib/chessground-examples-assets/theme.css",
-        "../contrib/chessground-examples-assets/cburnett.css",
-        "../contrib/chessground-examples-assets/images/board/brown.svg",
-        "../manifests/chess-openings.webmanifest",
-      ]);
-
-      console.log("cached");
-
-      console.log(`persisted: ${await navigator.storage.persisted()}`);
-    })();
-  }
 })();
