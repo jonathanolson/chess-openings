@@ -3,15 +3,32 @@ import { Move, SaveState, VerboseMove } from "./common.js";
 import { nodesToCompactState } from "./nodesToCompactState.js";
 import { compactStateToNodes } from "./compactStateToNodes.js";
 import { scanConflicts } from "./scanConflicts.js";
-import { DerivedProperty, Property, ReadOnlyProperty } from "scenerystack/axon";
+import {
+  DerivedProperty,
+  EnumerationProperty,
+  Property,
+  ReadOnlyProperty,
+} from "scenerystack/axon";
 import { Chess } from "chess.js";
 import { StackMove } from "./StackMove.js";
 import { getFen } from "./getFen.js";
 import { initialFen } from "./initialFen.js";
 import { assert } from "scenerystack/assert";
 import { Random } from "scenerystack/dot";
+import { Enumeration, EnumerationValue } from "scenerystack/phet-core";
+import { saveAs } from "file-saver";
+import { saveUserState, userProperty } from "./firebase-actions.js";
 
 const random = new Random();
+
+export default class SaveStatus extends EnumerationValue {
+  public static readonly NORMAL = new SaveStatus();
+  public static readonly SAVING = new SaveStatus();
+  public static readonly SUCCESS = new SaveStatus();
+  public static readonly FAILURE = new SaveStatus();
+
+  public static readonly enumeration = new Enumeration(SaveStatus);
+}
 
 export class Model {
   public readonly whiteNodes: Nodes = {};
@@ -54,7 +71,14 @@ export class Model {
   public readonly useDrillWeightsProperty = new Property<boolean>(true);
   public readonly lockDrillToColorProperty = new Property<boolean>(false);
 
-  public constructor(saveState: SaveState) {
+  public readonly saveStatusProperty = new EnumerationProperty(
+    SaveStatus.NORMAL,
+  );
+
+  public constructor(
+    saveState: SaveState,
+    private readonly usedOnlineChessOpenings: boolean,
+  ) {
     compactStateToNodes(this.whiteNodes, saveState.white, true);
     compactStateToNodes(this.blackNodes, saveState.black, false);
 
@@ -366,5 +390,37 @@ export class Model {
         }, 70);
       }
     }
+  }
+
+  public async exportState() {
+    const obj = this.getCompactState();
+
+    const json = JSON.stringify(obj);
+
+    const string = "export default " + json + ";";
+
+    console.log(string);
+
+    // Do not wipe out progress online!!!
+    if (!this.usedOnlineChessOpenings) {
+      saveAs(
+        new Blob([string], { type: "application/json;charset=utf-8" }),
+        "chessOpenings.js",
+      );
+      this.saveStatusProperty.value = SaveStatus.NORMAL;
+    } else {
+      this.saveStatusProperty.value = SaveStatus.SAVING;
+
+      try {
+        await saveUserState(userProperty.value!.uid, obj);
+        this.saveStatusProperty.value = SaveStatus.SUCCESS;
+      } catch (e) {
+        console.error("Failed to save!");
+        console.error(e);
+        this.saveStatusProperty.value = SaveStatus.FAILURE;
+      }
+    }
+
+    return json;
   }
 }

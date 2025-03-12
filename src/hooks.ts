@@ -4,6 +4,7 @@ const stockfish = new Stockfish({
   hashSizeInMegabytes: 128,
 });
 
+// @ts-expect-error global defined
 window.getEvaluation = async (
   fen: string,
   timeString: string,

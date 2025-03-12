@@ -14,34 +14,12 @@ import {
   GridBox,
   HBox,
   Node,
-  Path,
   Rectangle,
   Text,
   VBox,
 } from "scenerystack/scenery";
 import { Chess, SQUARES } from "chess.js";
 import { Chessground } from "chessground";
-import {
-  AquaRadioButtonGroup,
-  BooleanRectangularStickyToggleButton,
-  ButtonNode,
-  RectangularPushButton,
-} from "scenerystack/sun";
-import { saveAs } from "file-saver";
-import {
-  backwardSolidShape,
-  chartBarSolidShape,
-  dumbbellSolidShape,
-  eraserSolidShape,
-  fileDownloadSolidShape,
-  forwardSolidShape,
-  lockSolidShape,
-  runningSolidShape,
-  saveSolidShape,
-  signOutAltSolidShape,
-  stepBackwardSolidShape,
-  stepForwardSolidShape,
-} from "scenery-fontawesome-5";
 import chessOpenings from "./data/chessOpenings";
 import { Move, SaveState, Square, VerboseMove } from "./model/common";
 import { getFen } from "./model/getFen";
@@ -52,8 +30,6 @@ import { copyToClipboard } from "./view/copyToClipboard.js";
 import { SignInNode } from "./view/SignInNode.js";
 import {
   loadUserState,
-  logOut,
-  saveUserState,
   userLoadedPromise,
   userPromise,
   userProperty,
@@ -66,7 +42,7 @@ import {
 } from "./view/theme.js";
 import { StackNode } from "./view/StackNode.js";
 import { Model } from "./model/Model.js";
-import { glassPane, TooltipListener, ViewContext } from "scenery-toolkit";
+import { glassPane, ViewContext } from "scenery-toolkit";
 import { getOpeningInfo } from "./model/getOpeningInfo.js";
 import {
   getCompactLichessExplore,
@@ -74,6 +50,7 @@ import {
 } from "./model/getLichessExplore.js";
 import { WinStatisticsBar } from "./view/WinStatisticsBar.js";
 import { LastDrillNode } from "./view/LastDrillNode.js";
+import { MainControlsNode } from "./view/MainControlsNode.js";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
@@ -154,8 +131,6 @@ window.Chess = Chess;
     stepTimer,
   );
 
-  const genericTooltipListener = new TooltipListener(viewContext);
-
   // TODO: how to handle sign-in better
   display.updateOnRequestAnimationFrame(() => {
     if (scene.bounds.isValid()) {
@@ -215,41 +190,7 @@ window.Chess = Chess;
     }
   }
 
-  const model = new Model(usedChessOpenings);
-
-  const exportState = async () => {
-    const obj = model.getCompactState();
-
-    const json = JSON.stringify(obj);
-
-    const string = "export default " + json + ";";
-
-    console.log(string);
-
-    // Do not wipe out progress online!!!
-    if (options.local || !usedOnlineChessOpenings) {
-      saveAs(
-        new Blob([string], { type: "application/json;charset=utf-8" }),
-        "chessOpenings.js",
-      );
-      downloadBaseColor.value = new Color("#aaf");
-    } else {
-      downloadBaseColor.value = Color.WHITE;
-
-      try {
-        await saveUserState(userProperty.value!.uid, obj);
-        downloadBaseColor.value = new Color("#afa");
-      } catch (e) {
-        console.error("Failed to save!");
-        console.error(e);
-        downloadBaseColor.value = new Color("#faa");
-      }
-    }
-
-    return json;
-  };
-
-  const showNodes = () => {};
+  const model = new Model(usedChessOpenings, usedOnlineChessOpenings);
 
   const toColor = (board: Chess) => (board.turn() === "w" ? "white" : "black");
 
@@ -398,18 +339,6 @@ window.Chess = Chess;
     },
   });
 
-  // Listen for the enter key press.
-  document.body.addEventListener("keydown", (e) => {
-    // console.log( e.keyCode );
-
-    if (e.keyCode === 37 && canGoBackProperty.value) {
-      model.goBack();
-    }
-    if (e.keyCode === 39 && canGoForwardProperty.value) {
-      model.goForward();
-    }
-  });
-
   const stackContainer = new Node();
   Multilink.multilink(
     [model.stackProperty, model.stackPositionProperty, model.nodesProperty],
@@ -425,168 +354,7 @@ window.Chess = Chess;
     },
   );
 
-  const whiteBlackSwitch = new AquaRadioButtonGroup(
-    model.isWhiteProperty,
-    [
-      {
-        value: true,
-        createNode: () =>
-          new Text("White", { fill: uiForegroundColorProperty }),
-      },
-      {
-        value: false,
-        createNode: () =>
-          new Text("Black", { fill: uiForegroundColorProperty }),
-      },
-    ],
-    {
-      orientation: "horizontal",
-      spacing: 15,
-      enabledProperty: model.isNotDrillProperty,
-    },
-  );
-
-  const canGoBackProperty = new DerivedProperty(
-    [model.stackPositionProperty],
-    (stackPosition) => stackPosition >= 1,
-  );
-  const canGoForwardProperty = new DerivedProperty(
-    [model.stackPositionProperty, model.stackProperty],
-    (stackPosition: number, stack: StackMove[]) => stackPosition < stack.length,
-  );
-
-  const controlButtons = new HBox({
-    spacing: 5,
-    children: [
-      new RectangularPushButton({
-        content: new Path(backwardSolidShape, { fill: "black", scale: 0.03 }),
-        accessibleName: "Go to Starting Position",
-        listener: () => model.goFullBack(),
-        baseColor: "#fff",
-        enabledProperty: canGoBackProperty,
-        buttonAppearanceStrategy: ButtonNode.FlatAppearanceStrategy,
-      }),
-      new RectangularPushButton({
-        content: new Path(stepBackwardSolidShape, {
-          fill: "black",
-          scale: 0.03,
-        }),
-        accessibleName: "Go Back",
-        listener: () => model.goBack(),
-        baseColor: "#fff",
-        enabledProperty: canGoBackProperty,
-        buttonAppearanceStrategy: ButtonNode.FlatAppearanceStrategy,
-      }),
-      new RectangularPushButton({
-        content: new Path(stepForwardSolidShape, {
-          fill: "black",
-          scale: 0.03,
-        }),
-        accessibleName: "Go Forward",
-        listener: () => model.goForward(),
-        baseColor: "#fff",
-        enabledProperty: canGoForwardProperty,
-        buttonAppearanceStrategy: ButtonNode.FlatAppearanceStrategy,
-      }),
-      new RectangularPushButton({
-        content: new Path(forwardSolidShape, { fill: "black", scale: 0.03 }),
-        accessibleName: "Go to End of Line",
-        listener: () => model.goFullForward(),
-        baseColor: "#fff",
-        enabledProperty: canGoForwardProperty,
-        buttonAppearanceStrategy: ButtonNode.FlatAppearanceStrategy,
-      }),
-    ],
-  });
-  controlButtons.children.forEach((button) =>
-    button.addInputListener(genericTooltipListener),
-  );
-
-  const downloadBaseColor = new Property<Color>(Color.WHITE);
-
-  const fileButtons = new HBox({
-    spacing: 5,
-    children: [
-      new RectangularPushButton({
-        content: new Path(fileDownloadSolidShape, {
-          fill: "black",
-          scale: 0.03,
-        }),
-        accessibleName: "Save Changes",
-        listener: exportState,
-        baseColor: downloadBaseColor,
-        buttonAppearanceStrategy: ButtonNode.FlatAppearanceStrategy,
-      }),
-      new RectangularPushButton({
-        content: new Path(saveSolidShape, { fill: "black", scale: 0.03 }),
-        accessibleName: "Remember This Line",
-        listener: () => model.saveTree(),
-        baseColor: "#fff",
-        enabledProperty: model.isNotDrillProperty,
-        buttonAppearanceStrategy: ButtonNode.FlatAppearanceStrategy,
-      }),
-      new RectangularPushButton({
-        content: new Path(eraserSolidShape, { fill: "black", scale: 0.03 }),
-        accessibleName: "Forget This Line",
-        listener: () => model.deleteTree(),
-        baseColor: "#fff",
-        enabledProperty: model.isNotDrillProperty,
-        buttonAppearanceStrategy: ButtonNode.FlatAppearanceStrategy,
-      }),
-      new RectangularPushButton({
-        content: new Path(signOutAltSolidShape, { fill: "black", scale: 0.03 }),
-        accessibleName: "Log Out",
-        listener: async () => {
-          await logOut();
-
-          // TODO: show sign in!
-        },
-        baseColor: "#fff",
-        buttonAppearanceStrategy: ButtonNode.FlatAppearanceStrategy,
-      }),
-    ],
-  });
-  fileButtons.children.forEach((button) =>
-    button.addInputListener(genericTooltipListener),
-  );
-
-  const drillButtons = new HBox({
-    spacing: 5,
-    children: [
-      new RectangularPushButton({
-        content: new Path(runningSolidShape, { fill: "black", scale: 0.03 }),
-        accessibleName: "Toggle Drill Mode",
-        listener: () => model.toggleDrills(),
-        baseColor: "#fff",
-        buttonAppearanceStrategy: ButtonNode.FlatAppearanceStrategy,
-      }),
-      new BooleanRectangularStickyToggleButton(model.useDrillWeightsProperty, {
-        content: new Path(dumbbellSolidShape, { fill: "black", scale: 0.03 }),
-        accessibleName: "Toggle Drill Weights",
-        baseColor: "#fff",
-        enabledProperty: model.isNotDrillProperty,
-        buttonAppearanceStrategy: ButtonNode.FlatAppearanceStrategy,
-      }),
-      new BooleanRectangularStickyToggleButton(model.lockDrillToColorProperty, {
-        content: new Path(lockSolidShape, { fill: "black", scale: 0.03 }),
-        accessibleName: "Lock Single Color",
-        baseColor: "#fff",
-        enabledProperty: model.isNotDrillProperty,
-        buttonAppearanceStrategy: ButtonNode.FlatAppearanceStrategy,
-      }),
-      new RectangularPushButton({
-        content: new Path(chartBarSolidShape, { fill: "black", scale: 0.03 }),
-        accessibleName: "Show Statistics",
-        listener: () => showNodes(),
-        baseColor: "#fff",
-        enabledProperty: model.isNotDrillProperty,
-        buttonAppearanceStrategy: ButtonNode.FlatAppearanceStrategy,
-      }),
-    ],
-  });
-  drillButtons.children.forEach((button) =>
-    button.addInputListener(genericTooltipListener),
-  );
+  const mainControlsNode = new MainControlsNode(model, viewContext);
 
   const fenText = new Text("", {
     fontSize: 8,
@@ -805,13 +573,7 @@ window.Chess = Chess;
       children: [
         new VBox({
           spacing: 5,
-          children: [
-            whiteBlackSwitch,
-            controlButtons,
-            fileButtons,
-            drillButtons,
-            stackContainer,
-          ],
+          children: [mainControlsNode, stackContainer],
         }),
         new VBox({
           align: "left",
