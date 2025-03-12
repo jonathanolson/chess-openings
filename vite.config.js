@@ -43,12 +43,12 @@ const config = {
         background_color: "#eeeeee",
         icons: [
           {
-            src: "chess-openings-512px.png",
+            src: "images/chess-openings-512px.png",
             type: "image/png",
             sizes: "512x512",
           },
           {
-            src: "chess-openings-192px.png",
+            src: "images/chess-openings-192px.png",
             type: "image/png",
             sizes: "192x192",
           },
