@@ -5,106 +5,166 @@ import {
   Rectangle,
   Text,
 } from "scenerystack/scenery";
-import { StackMove } from "../model/StackMove";
 import { getFen } from "../model/getFen";
-import { DerivedProperty } from "scenerystack/axon";
+import { TReadOnlyProperty } from "scenerystack/axon";
 import { boldFont, nicePurple, niceRed, unboldFont } from "./theme";
-import { Nodes } from "../model/ChessNode";
-import _ from "lodash";
+import { Model } from "../model/Model";
+import { Move } from "../model/common";
+
+const leftWidth = 25;
+const rightWidth = 52;
+const height = 20;
+
+class LabelNode extends Rectangle {
+  public constructor(i: number) {
+    super(0, 0, leftWidth, height, {
+      fill: "#fff",
+      layoutOptions: {
+        column: 0,
+        row: i,
+      },
+      children: [
+        new Text(i + 1, {
+          centerX: leftWidth / 2,
+          centerY: height / 2,
+          font: boldFont,
+          fill: "#888",
+        }),
+      ],
+    });
+  }
+}
+
+class StackMoveNode extends Rectangle {
+  private readonly label: Text;
+
+  // state
+  private move: Move = "m";
+  private isInNodes: boolean = false;
+  private stackPosition: number = 0;
+
+  private looksOverProperty: TReadOnlyProperty<boolean>;
+
+  public constructor(
+    model: Model,
+    private readonly i: number,
+  ) {
+    const label = new Text("m");
+
+    const fireListener = new FireListener({
+      fire: () => {
+        model.selectStackIndex(i);
+      },
+    });
+
+    super(0, 0, rightWidth, height, {
+      layoutOptions: {
+        column: 1 + (i % 2),
+        row: Math.floor(i / 2),
+      },
+      children: [label],
+      cursor: "pointer",
+      inputListeners: [fireListener],
+    });
+
+    this.label = label;
+    this.looksOverProperty = fireListener.looksOverProperty;
+
+    fireListener.looksOverProperty.lazyLink(this.updateAppearance.bind(this));
+  }
+
+  public setState(move: Move, isInNodes: boolean, stackPosition: number) {
+    this.move = move;
+    this.isInNodes = isInNodes;
+    this.stackPosition = stackPosition;
+
+    this.updateAppearance();
+  }
+
+  private updateAppearance(): void {
+    this.label.string = this.move;
+    this.label.font = this.isInNodes ? boldFont : unboldFont;
+
+    // TODO: can we ditch this? it will likely no-op though?
+    this.label.left = 5;
+    this.label.centerY = height / 2;
+
+    // TODO: theming!
+    this.fill =
+      this.stackPosition - 1 === this.i
+        ? this.isInNodes
+          ? nicePurple
+          : niceRed
+        : this.looksOverProperty.value
+          ? "#ccc"
+          : this.isInNodes
+            ? "#ddd"
+            : "#eee";
+  }
+}
 
 export class StackNode extends Node {
-  public constructor(
-    stack: StackMove[],
-    stackPosition: number,
-    nodes: Nodes,
-    selectStackIndex: (index: number) => void,
-  ) {
-    if (stack.length === 0) {
-      return new Node();
-    }
-    const leftWidth = 25;
-    const rightWidth = 52;
-    const height = 20;
-
-    const gridChildren: Node[] = [];
-
-    _.range(0, Math.ceil(stack.length / 2)).forEach((i) => {
-      gridChildren.push(
-        new Rectangle(0, 0, leftWidth, height, {
-          fill: "#fff",
-          layoutOptions: {
-            column: 0,
-            row: i,
-          },
-          children: [
-            new Text(i + 1, {
-              centerX: leftWidth / 2,
-              centerY: height / 2,
-              font: boldFont,
-              fill: "#888",
-            }),
-          ],
-        }),
-      );
-    });
-
-    stack.forEach((stackMove, i) => {
-      const isInNodes = !!nodes[getFen(stackMove.board)];
-
-      const fireListener = new FireListener({
-        fire: () => {
-          selectStackIndex(i);
-        },
-      });
-
-      const fill = new DerivedProperty(
-        [fireListener.looksOverProperty],
-        (looksOver) => {
-          return stackPosition - 1 === i
-            ? isInNodes
-              ? nicePurple
-              : niceRed
-            : looksOver
-              ? "#ccc"
-              : isInNodes
-                ? "#ddd"
-                : "#eee";
-        },
-      );
-
-      gridChildren.push(
-        new Rectangle(0, 0, rightWidth, height, {
-          fill: fill,
-          layoutOptions: {
-            column: 1 + (i % 2),
-            row: Math.floor(i / 2),
-          },
-          children: [
-            new Text(stackMove.move, {
-              left: 5,
-              centerY: height / 2,
-              font: isInNodes ? boldFont : unboldFont,
-            }),
-          ],
-          cursor: "pointer",
-          inputListeners: [fireListener],
-        }),
-      );
-    });
-
+  public constructor(model: Model) {
     const grid = new GridBox({
       xAlign: "left",
-      children: gridChildren,
     });
 
+    const backgroundNode = new Rectangle(0, 0, 0, 0, {
+      stroke: "#666",
+      lineWidth: 1,
+    });
+
+    const labelNodes: LabelNode[] = [];
+    const getLabelNodes = (n: number): LabelNode[] => {
+      for (let i = labelNodes.length; i < n; i++) {
+        labelNodes.push(new LabelNode(i));
+      }
+
+      return labelNodes.slice(0, n);
+    };
+
+    const stackMoveNodes: StackMoveNode[] = [];
+    const getStackMoveNodes = (n: number): StackMoveNode[] => {
+      for (let i = stackMoveNodes.length; i <= n; i++) {
+        stackMoveNodes.push(new StackMoveNode(model, i));
+      }
+
+      return stackMoveNodes.slice(0, n);
+    };
+
+    const update = () => {
+      const stack = model.stackProperty.value;
+      const stackPosition = model.stackPositionProperty.value;
+      const nodes = model.nodesProperty.value;
+
+      if (stack.length === 0) {
+        return new Node();
+      }
+
+      const labelNodes = getLabelNodes(Math.ceil(stack.length / 2));
+
+      const stackMoveNodes = getStackMoveNodes(stack.length);
+      stack.forEach((stackMove, i) => {
+        // TODO: more efficient way?
+        const isInNodes = !!nodes[getFen(stackMove.board)];
+
+        stackMoveNodes[i].setState(stackMove.move, isInNodes, stackPosition);
+      });
+
+      grid.children = [...labelNodes, ...stackMoveNodes];
+
+      backgroundNode.rectBounds = grid.bounds
+        .withMaxX(leftWidth + 2 * rightWidth)
+        .dilated(0.5);
+    };
+
+    model.stackProperty.lazyLink(update);
+    model.stackPositionProperty.lazyLink(update);
+    model.nodesProperty.lazyLink(update);
+    update();
+
     super({
-      children: [
-        Rectangle.bounds(
-          grid.bounds.withMaxX(leftWidth + 2 * rightWidth).dilated(0.5),
-          { stroke: "#666", lineWidth: 1 },
-        ),
-        grid,
-      ],
+      children: [backgroundNode, grid],
     });
   }
 }

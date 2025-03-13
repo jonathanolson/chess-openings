@@ -167,20 +167,7 @@ window.Chess = Chess;
 
   new ChessgroundView(model, boardDiv);
 
-  const stackContainer = new Node();
-  Multilink.multilink(
-    [model.stackProperty, model.stackPositionProperty, model.nodesProperty],
-    (stack: StackMove[], stackPosition: number, nodes: Nodes) => {
-      stackContainer.children = [
-        new StackNode(
-          stack,
-          stackPosition,
-          nodes,
-          model.selectStackIndex.bind(model),
-        ),
-      ];
-    },
-  );
+  const stackNode = new StackNode(model);
 
   const mainControlsNode = new MainControlsNode(model, viewContext);
 
@@ -197,7 +184,7 @@ window.Chess = Chess;
       children: [
         new VBox({
           spacing: 5,
-          children: [mainControlsNode, stackContainer],
+          children: [mainControlsNode, stackNode],
         }),
         new VBox({
           align: "left",
