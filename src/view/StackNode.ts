@@ -7,7 +7,20 @@ import {
 } from "scenerystack/scenery";
 import { getFen } from "../model/getFen";
 import { TReadOnlyProperty } from "scenerystack/axon";
-import { boldFont, nicePurple, niceRed, unboldFont } from "./theme";
+import {
+  boldFont,
+  stackNodeBackgroundProperty,
+  stackNodeBorderProperty,
+  stackNodeForegroundProperty,
+  stackNodeHoverColorProperty,
+  stackNodeInNodesColorProperty,
+  stackNodeLabelColorProperty,
+  stackNodeNotInNodesColorProperty,
+  stackNodeTailInNodesColorProperty,
+  stackNodeTailNotInNodesColorProperty,
+  strongBackgroundColorProperty,
+  unboldFont,
+} from "./theme";
 import { Model } from "../model/Model";
 import { Move } from "../model/common";
 
@@ -18,7 +31,7 @@ const height = 20;
 class LabelNode extends Rectangle {
   public constructor(i: number) {
     super(0, 0, leftWidth, height, {
-      fill: "#fff",
+      fill: strongBackgroundColorProperty,
       layoutOptions: {
         column: 0,
         row: i,
@@ -28,7 +41,7 @@ class LabelNode extends Rectangle {
           centerX: leftWidth / 2,
           centerY: height / 2,
           font: boldFont,
-          fill: "#888",
+          fill: stackNodeLabelColorProperty,
         }),
       ],
     });
@@ -49,7 +62,9 @@ class StackMoveNode extends Rectangle {
     model: Model,
     private readonly i: number,
   ) {
-    const label = new Text("m");
+    const label = new Text("m", {
+      fill: stackNodeForegroundProperty,
+    });
 
     const fireListener = new FireListener({
       fire: () => {
@@ -93,13 +108,13 @@ class StackMoveNode extends Rectangle {
     this.fill =
       this.stackPosition - 1 === this.i
         ? this.isInNodes
-          ? nicePurple
-          : niceRed
+          ? stackNodeTailInNodesColorProperty
+          : stackNodeTailNotInNodesColorProperty
         : this.looksOverProperty.value
-          ? "#ccc"
+          ? stackNodeHoverColorProperty
           : this.isInNodes
-            ? "#ddd"
-            : "#eee";
+            ? stackNodeInNodesColorProperty
+            : stackNodeNotInNodesColorProperty;
   }
 }
 
@@ -110,7 +125,8 @@ export class StackNode extends Node {
     });
 
     const backgroundNode = new Rectangle(0, 0, 0, 0, {
-      stroke: "#666",
+      stroke: stackNodeBorderProperty,
+      fill: stackNodeBackgroundProperty,
       lineWidth: 1,
     });
 

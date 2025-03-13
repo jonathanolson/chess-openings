@@ -13,10 +13,27 @@ const niceRedK = {
   a: niceRedHueChroma.x,
   b: niceRedHueChroma.y,
 };
+const darkerLuminance = 0.45;
+const niceDarkPurpleK = {
+  mode: "oklab",
+  l: darkerLuminance,
+  a: nicePurpleHueChroma.x,
+  b: nicePurpleHueChroma.y,
+};
+const niceDarkRedK = {
+  mode: "oklab",
+  l: darkerLuminance,
+  a: niceRedHueChroma.x,
+  b: niceRedHueChroma.y,
+};
 
 export const nicePurple = formatHex(nicePurpleK);
 // @ts-expect-error Somethings seems wrong with type desc
 export const niceRed = formatHex(niceRedK);
+// @ts-expect-error Somethings seems wrong with type desc
+export const niceDarkPurple = formatHex(niceDarkPurpleK);
+// @ts-expect-error Somethings seems wrong with type desc
+export const niceDarkRed = formatHex(niceDarkRedK);
 
 export const unboldFont = new Font({
   family: "Helvetica, Arial, sans-serif",
@@ -50,7 +67,48 @@ export const backgroundColorProperty = new LightDarkColorProperty(
   "#eee",
   "#333",
 );
+export const strongBackgroundColorProperty = new LightDarkColorProperty(
+  "#fff",
+  "#111",
+);
 export const uiForegroundColorProperty = new LightDarkColorProperty(
   "#000",
   "rgb(204,204,204)",
+);
+
+export const stackNodeBorderProperty = new LightDarkColorProperty(
+  "#666",
+  "#999",
+);
+export const stackNodeLabelColorProperty = new LightDarkColorProperty(
+  "#888",
+  "#888",
+);
+export const stackNodeForegroundProperty = new LightDarkColorProperty(
+  "#000",
+  "#fff",
+);
+export const stackNodeBackgroundProperty = new LightDarkColorProperty(
+  "#eee",
+  "#000",
+);
+export const stackNodeTailInNodesColorProperty = new LightDarkColorProperty(
+  nicePurple,
+  niceDarkPurple,
+);
+export const stackNodeTailNotInNodesColorProperty = new LightDarkColorProperty(
+  niceRed,
+  niceDarkRed,
+);
+export const stackNodeHoverColorProperty = new LightDarkColorProperty(
+  "#ccc",
+  "#666",
+);
+export const stackNodeInNodesColorProperty = new LightDarkColorProperty(
+  "#ddd",
+  "#393939",
+);
+export const stackNodeNotInNodesColorProperty = new LightDarkColorProperty(
+  "#eee",
+  "#222",
 );
