@@ -44,32 +44,32 @@ import { getFen } from "../src/model/getFen.js";
       );
     };
 
-    console.log("optimizing");
-    {
-      const recur = (explore: CompactLichessExplore, keys: Move[]) => {
-        if (explore.m) {
-          const moves = Object.keys(explore.m);
-
-          for (const move of moves) {
-            const subExplore = explore.m[move];
-
-            if (
-              !subExplore.m &&
-              subExplore.d[0] === 0 &&
-              subExplore.d[1] === 0 &&
-              subExplore.d[2] === 0
-            ) {
-              console.log(`removing ${keys.join(" ")} ${move}`);
-              delete explore.m[move];
-            } else {
-              recur(subExplore, [...keys, move]);
-            }
-          }
-        }
-      };
-      recur(mainExplore, []);
-    }
-    save();
+    // console.log("optimizing");
+    // {
+    //   const recur = (explore: CompactLichessExplore, keys: Move[]) => {
+    //     if (explore.m) {
+    //       const moves = Object.keys(explore.m);
+    //
+    //       for (const move of moves) {
+    //         const subExplore = explore.m[move];
+    //
+    //         if (
+    //           !subExplore.m &&
+    //           subExplore.d[0] === 0 &&
+    //           subExplore.d[1] === 0 &&
+    //           subExplore.d[2] === 0
+    //         ) {
+    //           console.log(`removing ${keys.join(" ")} ${move}`);
+    //           delete explore.m[move];
+    //         } else {
+    //           recur(subExplore, [...keys, move]);
+    //         }
+    //       }
+    //     }
+    //   };
+    //   recur(mainExplore, []);
+    // }
+    // save();
 
     const histories: Move[][] = [[]];
 
