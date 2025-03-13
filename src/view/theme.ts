@@ -106,7 +106,7 @@ export const stackNodeHoverColorProperty = new LightDarkColorProperty(
 );
 export const stackNodeInNodesColorProperty = new LightDarkColorProperty(
   "#ddd",
-  "#393939",
+  "#444",
 );
 export const stackNodeNotInNodesColorProperty = new LightDarkColorProperty(
   "#eee",
