@@ -14,26 +14,34 @@ export const centipawnsToWinPercentage = (centipawns: number): number =>
 
 export const stockfishEntryToWinPercentage = (
   entry: StockfishEntry,
+  isWhite: boolean,
 ): number => {
+  const score = isWhite ? entry.s : -entry.s;
+
   if (entry.m === "mate") {
-    return entry.s >= 0 ? 100 : 0;
+    return score >= 0 ? 100 : 0;
   } else {
-    return centipawnsToWinPercentage(entry.s);
+    return centipawnsToWinPercentage(score);
   }
 };
 
-export const stockfishEntryToString = (entry: StockfishEntry): string => {
+export const stockfishEntryToString = (
+  entry: StockfishEntry,
+  isWhite: boolean,
+): string => {
+  const score = isWhite ? entry.s : -entry.s;
+
   if (entry.m === "mate") {
-    if (entry.s === 0) {
+    if (score === 0) {
       return "#";
     } else {
       // TODO: verify that this is correct?
-      return `#${Math.ceil(entry.s / 2)}`;
+      return `#${score > 0 ? Math.ceil(score / 2) : Math.floor(score / 2)}`;
     }
-  } else if (entry.s === 0) {
+  } else if (score === 0) {
     return "0";
   } else {
     // 3 decimal places shows full precision
-    return `${entry.s > 0 ? "+" : ""}${toFixed(entry.s, 3)}`;
+    return `${score > 0 ? "+" : ""}${toFixed(score / 100, 2)}`;
   }
 };

@@ -18,7 +18,14 @@ import {
   LichessExploreWins,
 } from "../model/getLichessExplore.js";
 import { initialFen } from "../model/initialFen.js";
-import { Move } from "../model/common.js";
+import { Fen, Move } from "../model/common.js";
+import stockfishJSON from "../data/stockfish-snapshot.json";
+import {
+  StockfishData,
+  StockfishEntry,
+  stockfishEntryToString,
+  stockfishEntryToWinPercentage,
+} from "../model/StockfishData.js";
 
 export class MovesNode extends VBox {
   public constructor(model: Model) {
@@ -28,7 +35,7 @@ export class MovesNode extends VBox {
     });
     const updateMoveNode = () => {
       const stackMove = model.selectedStackMoveProperty.value;
-      const fen = stackMove ? getFen(stackMove.board) : initialFen;
+      const fen: Fen = stackMove ? getFen(stackMove.board) : initialFen;
       const node = model.nodesProperty.value[fen];
 
       this.removeAllChildren();
@@ -105,9 +112,21 @@ export class MovesNode extends VBox {
           const isIncludedInTree = node && node.moves.includes(move);
           const moveNode = isIncludedInTree ? node.getChildNode(move) : null;
 
+          const moveBoard = new Chess(fen);
+          moveBoard.move(move);
+          const moveFen = getFen(moveBoard);
+          const stockfishEntry: StockfishEntry | null =
+            (stockfishJSON as StockfishData)[moveFen] ?? null;
+
+          const stockfishIsWhite = moveBoard.turn() === "w";
+          const stockfishWinPercentage: number | null = stockfishEntry
+            ? stockfishEntryToWinPercentage(stockfishEntry, stockfishIsWhite)
+            : null;
+
           const bar = new WinStatisticsBar(
             lichessWins,
             model.isWhiteProperty.value,
+            stockfishWinPercentage,
             {
               layoutOptions: { column: 1, row: 0 },
             },
@@ -127,6 +146,20 @@ export class MovesNode extends VBox {
               }),
               bar,
               new Text(
+                stockfishEntry
+                  ? stockfishEntryToString(stockfishEntry, stockfishIsWhite)
+                  : "-",
+                {
+                  font: unboldFont,
+                  layoutOptions: {
+                    column: 2,
+                    row: 0,
+                    minContentWidth: 40,
+                    xAlign: "center",
+                  },
+                },
+              ),
+              new Text(
                 lichessWins
                   ? lichessWins.whiteWins +
                     lichessWins.blackWins +
@@ -135,7 +168,7 @@ export class MovesNode extends VBox {
                 {
                   font: unboldFont,
                   layoutOptions: {
-                    column: 2,
+                    column: 3,
                     row: 0,
                     minContentWidth: 60,
                     xAlign: "left",
@@ -147,7 +180,7 @@ export class MovesNode extends VBox {
                 {
                   font: unboldFont,
                   layoutOptions: {
-                    column: 3,
+                    column: 4,
                     row: 0,
                     minContentWidth: 40,
                     xAlign: "left",
