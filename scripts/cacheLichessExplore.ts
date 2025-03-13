@@ -4,14 +4,14 @@ import {
   LichessExploreType,
 } from "../src/model/getLichessExplore.js";
 import chessOpenings from "../src/data/chessOpenings.js";
-import { Nodes } from "../src/model/ChessNode.js";
+import type { Nodes } from "../src/model/ChessNode.js";
 import { compactStateToNodes } from "../src/model/compactStateToNodes.js";
 import { scanConflicts } from "../src/model/scanConflicts.js";
 // @ts-expect-error Some options
 import _ from "lodash";
 // @ts-expect-error Some options
 import fs from "fs";
-import { Move } from "../src/model/common.js";
+import type { Move } from "../src/model/common.js";
 import { Chess } from "chess.js";
 import { sleep } from "./sleep.js";
 import { getFen } from "../src/model/getFen.js";

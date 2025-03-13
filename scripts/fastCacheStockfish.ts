@@ -13,11 +13,22 @@ import { Fen } from "../src/model/common.js";
 import child_process from "child_process";
 import { Chess } from "chess.js";
 import { getFen } from "../src/model/getFen.js";
-import { StockfishData, StockfishEntry } from "../src/model/StockfishData.js";
+import type {
+  StockfishData,
+  StockfishEntry,
+} from "../src/model/StockfishData.js";
+import type { CompactLichessExplore } from "../src/model/getLichessExplore.js";
+import { initialFen } from "../src/model/initialFen.js";
 
 // npx tsx scripts/cacheStockfish.ts
 
 const depth = 36;
+
+const orderMethod = process.argv[2];
+
+if (orderMethod !== "depth" && orderMethod !== "popularity") {
+  throw new Error(`Invalid order method: ${orderMethod}`);
+}
 
 os.setPriority(os.constants.priority.PRIORITY_LOW);
 
@@ -43,24 +54,76 @@ os.setPriority(os.constants.priority.PRIORITY_LOW);
       });
     });
 
-  const whiteFens = Object.keys(whiteNodes);
-  const blackFens = Object.keys(blackNodes);
-  const whiteExtendedFens = fenExtend(whiteFens);
-  const blackExtendedFens = fenExtend(blackFens);
+  let fens: Fen[];
 
-  const fens = _.uniq([
-    ...whiteFens,
-    ...blackFens,
-    ...whiteExtendedFens,
-    ...blackExtendedFens,
-    ...fenExtend(whiteExtendedFens),
-    ...fenExtend(blackExtendedFens),
-  ]);
+  if (orderMethod === "depth") {
+    const whiteFens = Object.keys(whiteNodes);
+    const blackFens = Object.keys(blackNodes);
+    const whiteExtendedFens = fenExtend(whiteFens);
+    const blackExtendedFens = fenExtend(blackFens);
+    console.log(`whiteFens: ${whiteFens.length}`);
+    console.log(`blackFens: ${blackFens.length}`);
+    console.log(`whiteExtendedFens: ${whiteExtendedFens.length}`);
+    console.log(`blackExtendedFens: ${blackExtendedFens.length}`);
 
-  console.log(`whiteFens: ${whiteFens.length}`);
-  console.log(`blackFens: ${blackFens.length}`);
-  console.log(`whiteExtendedFens: ${whiteExtendedFens.length}`);
-  console.log(`blackExtendedFens: ${blackExtendedFens.length}`);
+    fens = _.uniq([
+      ...whiteFens,
+      ...blackFens,
+      ...whiteExtendedFens,
+      ...blackExtendedFens,
+      ...fenExtend(whiteExtendedFens),
+      ...fenExtend(blackExtendedFens),
+    ]);
+  } else if (orderMethod === "popularity") {
+    const mainExplore: CompactLichessExplore = JSON.parse(
+      fs.readFileSync("./src/data/lichessExploreBlitzLowDeep.json", "utf8"),
+    );
+
+    type PopularityEntry = {
+      fen: Fen;
+      popularity: number;
+    };
+
+    console.log("computing popularity map");
+
+    const popularityMap: Record<Fen, number> = {};
+    const recur = (explore: CompactLichessExplore, fen: Fen) => {
+      const popularity = explore.d[0] + explore.d[1] + explore.d[2];
+
+      if (popularityMap[fen]) {
+        popularityMap[fen] += popularity;
+      } else {
+        popularityMap[fen] = popularity;
+      }
+
+      if (explore.m) {
+        for (const move of Object.keys(explore.m)) {
+          const board = new Chess(fen);
+          board.move(move);
+          const subFen = getFen(board);
+
+          recur(explore.m[move], subFen);
+        }
+      }
+    };
+    recur(mainExplore, initialFen);
+
+    console.log("ordering by popularity");
+
+    const popularityEntries: PopularityEntry[] = Object.keys(popularityMap).map(
+      (fen) => ({
+        fen,
+        popularity: popularityMap[fen],
+      }),
+    );
+
+    fens = _.sortBy(popularityEntries, [(entry) => -entry.popularity]).map(
+      (entry) => entry.fen,
+    );
+  } else {
+    throw new Error(`Missing order method implementation: ${orderMethod}`);
+  }
+
   console.log(`total: ${fens.length}`);
 
   const getStockfishData = (): StockfishData => {
