@@ -14,19 +14,13 @@ import {
   getBrowser,
 } from "./puppeteer-tools.js";
 import { Fen } from "../src/model/common.js";
+import { StockfishData } from "../src/model/StockfishData.js";
 
 // npx tsx scripts/slowCacheStockfish.ts
 
 const depth = 24;
 
 os.setPriority(os.constants.priority.PRIORITY_LOW);
-
-type StockfishEntry = {
-  d: number; // depth
-  s: number; // score
-  m?: "mate"; // if mate
-};
-type StockfishData = Record<Fen, StockfishEntry>;
 
 (async () => {
   const whiteNodes: Nodes = {};

@@ -13,19 +13,13 @@ import { Fen } from "../src/model/common.js";
 import child_process from "child_process";
 import { Chess } from "chess.js";
 import { getFen } from "../src/model/getFen.js";
+import { StockfishData, StockfishEntry } from "../src/model/StockfishData.js";
 
 // npx tsx scripts/cacheStockfish.ts
 
 const depth = 36;
 
 os.setPriority(os.constants.priority.PRIORITY_LOW);
-
-type StockfishEntry = {
-  d: number; // depth
-  s: number; // score
-  m?: "mate"; // if mate
-};
-type StockfishData = Record<Fen, StockfishEntry>;
 
 (async () => {
   const whiteNodes: Nodes = {};
