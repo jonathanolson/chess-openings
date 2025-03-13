@@ -162,9 +162,9 @@ import { getFen } from "../src/model/getFen.js";
   await scan("lichessExploreRapidLow", "rapidLow", false);
   await scan("lichessExploreRapidHigh", "rapidHigh", false);
 
-  // await scan("lichessExploreBlitzLow", "blitzLow", true);
-  // await scan("lichessExploreMasters", "masters", true);
-  // await scan("lichessExploreBlitzHigh", "blitzHigh", true);
-  // await scan("lichessExploreRapidLow", "rapidLow", true);
-  // await scan("lichessExploreRapidHigh", "rapidHigh", true);
+  await scan("lichessExploreBlitzLowDeep", "blitzLow", true);
+  await scan("lichessExploreMastersDeep", "masters", true);
+  await scan("lichessExploreBlitzHighDeep", "blitzHigh", true);
+  await scan("lichessExploreRapidLowDeep", "rapidLow", true);
+  await scan("lichessExploreRapidHighDeep", "rapidHigh", true);
 })();
