@@ -45,26 +45,29 @@ export class MovesNode extends VBox {
         return;
       }
 
+      const lichessType = model.lichessExploreTypeProperty.value;
+
       // TODO: determine perhaps storing summaries by... the type? We will want to change the type, no?
-      let lichessSummary = stackMove?.lichessSummary ?? null;
+      let lichessSummary =
+        stackMove?.lichessSummaryMap?.get(lichessType) ?? null;
 
       if (!lichessSummary) {
         const possibleSummary = getCompactLichessExplore(
           stackMove?.history ?? [],
-          "blitzLow",
+          model.lichessExploreTypeProperty.value,
         );
 
         if (possibleSummary instanceof Promise) {
           possibleSummary.then((summary) => {
             if (stackMove) {
-              stackMove.lichessSummary = summary;
+              stackMove.lichessSummaryMap.set(lichessType, summary);
               stackLichessUpdatedEmitter.emit();
             }
           });
         } else {
           lichessSummary = possibleSummary;
           if (stackMove) {
-            stackMove.lichessSummary = lichessSummary;
+            stackMove.lichessSummaryMap.set(lichessType, lichessSummary);
           }
         }
       }
@@ -118,9 +121,14 @@ export class MovesNode extends VBox {
           const stockfishEntry: StockfishEntry | null =
             (stockfishJSON as StockfishData)[moveFen] ?? null;
 
+          const reversePercentIfBlack = (percent: number) =>
+            model.isWhiteProperty.value ? percent : 100 - percent;
+
           const stockfishIsWhite = moveBoard.turn() === "w";
           const stockfishWinPercentage: number | null = stockfishEntry
-            ? stockfishEntryToWinPercentage(stockfishEntry, stockfishIsWhite)
+            ? reversePercentIfBlack(
+                stockfishEntryToWinPercentage(stockfishEntry, stockfishIsWhite),
+              )
             : null;
 
           const bar = new WinStatisticsBar(
@@ -239,6 +247,7 @@ export class MovesNode extends VBox {
     model.selectedStackMoveProperty.link(updateMoveNode);
     model.isWhiteProperty.lazyLink(updateMoveNode);
     model.nodesProperty.lazyLink(updateMoveNode);
+    model.lichessExploreTypeProperty.lazyLink(updateMoveNode);
     model.isNotDrillProperty.lazyLink(updateMoveNode); // since we don't update when this is not true
     stackLichessUpdatedEmitter.addListener(updateMoveNode);
   }

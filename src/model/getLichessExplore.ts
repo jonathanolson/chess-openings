@@ -1,6 +1,10 @@
 import { LichessExplore, Move } from "./common";
 import { getLichessMovesString } from "./getLichessMovesString.js";
 import lichessExploreBlitzLow from "../data/lichessExploreBlitzLow.json";
+import lichessExploreBlitzHigh from "../data/lichessExploreBlitzHigh.json";
+import lichessExploreMasters from "../data/lichessExploreMasters.json";
+import lichessExploreRapidLow from "../data/lichessExploreRapidLow.json";
+import lichessExploreRapidHigh from "../data/lichessExploreRapidHigh.json";
 
 export const lichessExplore: { [key: string]: LichessExplore } = {};
 
@@ -33,34 +37,37 @@ export const getCompactLichessExplore = (
 ): LichessExploreSummary | Promise<LichessExploreSummary> => {
   // TODO: do we separate this out to a different file due to the data dependency?
 
-  if (type === "blitzLow") {
-    let explore: CompactLichessExplore =
-      lichessExploreBlitzLow as unknown as CompactLichessExplore;
+  let explore = {
+    blitzLow: lichessExploreBlitzLow,
+    blitzHigh: lichessExploreBlitzHigh,
+    masters: lichessExploreMasters,
+    rapidLow: lichessExploreRapidLow,
+    rapidHigh: lichessExploreRapidHigh,
+  }[type] as unknown as CompactLichessExplore;
 
-    let success = true;
-    for (const move of history) {
-      if (!explore.m || !explore.m[move]) {
-        success = false;
-        break;
-      }
-
-      explore = explore.m[move];
+  let success = true;
+  for (const move of history) {
+    if (!explore.m || !explore.m[move]) {
+      success = false;
+      break;
     }
 
-    if (success && explore.m) {
-      const summary: LichessExploreSummary = {};
+    explore = explore.m[move];
+  }
 
-      for (const move of Object.keys(explore.m)) {
-        const data = explore.m[move].d;
-        summary[move] = {
-          whiteWins: data[0],
-          draws: data[1],
-          blackWins: data[2],
-        };
-      }
+  if (success && explore.m) {
+    const summary: LichessExploreSummary = {};
 
-      return summary;
+    for (const move of Object.keys(explore.m)) {
+      const data = explore.m[move].d;
+      summary[move] = {
+        whiteWins: data[0],
+        draws: data[1],
+        blackWins: data[2],
+      };
     }
+
+    return summary;
   }
 
   return new Promise((resolve) => {

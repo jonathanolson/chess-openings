@@ -1,13 +1,11 @@
 import { QueryStringMachine } from "scenerystack/query-string-machine";
 import { enableAssert } from "scenerystack/assert";
-import { Multilink, Property, stepTimer } from "scenerystack/axon";
+import { Property, stepTimer } from "scenerystack/axon";
 import { Bounds2 } from "scenerystack/dot";
 import { Color, Display, HBox, Node, VBox } from "scenerystack/scenery";
 import { Chess } from "chess.js";
 import chessOpenings from "./data/chessOpenings";
 import { SaveState } from "./model/common";
-import { Nodes } from "./model/ChessNode";
-import { StackMove } from "./model/StackMove.js";
 import { SignInNode } from "./view/SignInNode.js";
 import {
   loadUserState,
@@ -24,6 +22,7 @@ import { MainControlsNode } from "./view/MainControlsNode.js";
 import { ChessgroundView } from "./view/ChessgroundView.js";
 import { OpeningInfoNode } from "./view/OpeningInfoNode.js";
 import { MovesNode } from "./view/MovesNode.js";
+import { MovesSettingsNode } from "./view/MovesSettingsNode.js";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
@@ -174,6 +173,7 @@ window.Chess = Chess;
   const openingInfoNode = new OpeningInfoNode(model);
 
   const movesNode = new MovesNode(model);
+  const movesSettingsNode = new MovesSettingsNode(model);
 
   const lastDrillNode = new LastDrillNode(model);
 
@@ -189,7 +189,12 @@ window.Chess = Chess;
         new VBox({
           align: "left",
           spacing: 3,
-          children: [openingInfoNode, movesNode, lastDrillNode],
+          children: [
+            openingInfoNode,
+            movesSettingsNode,
+            movesNode,
+            lastDrillNode,
+          ],
         }),
       ],
     }),

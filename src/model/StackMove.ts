@@ -3,7 +3,7 @@ import { TinyEmitter } from "scenerystack/axon";
 import { Fen, LichessExplore, Move, VerboseMove } from "./common";
 import { assert } from "scenerystack/assert";
 import { getFen } from "./getFen";
-import { getLichessExplore } from "./getLichessExplore.js";
+import { getLichessExplore, LichessExploreType } from "./getLichessExplore.js";
 import type { LichessExploreSummary } from "./getLichessExplore.js";
 import { ChessNode, Nodes } from "./ChessNode.js";
 
@@ -15,7 +15,10 @@ export class StackMove {
   public move: Move;
   public history: Move[];
   public lichessExplore: LichessExplore | null = null;
-  public lichessSummary: LichessExploreSummary | null = null;
+  public lichessSummaryMap = new Map<
+    LichessExploreType,
+    LichessExploreSummary
+  >();
 
   public constructor(board: Chess, previousHistory: Move[]) {
     this.board = board;

@@ -18,6 +18,7 @@ import { Random } from "scenerystack/dot";
 import { Enumeration, EnumerationValue } from "scenerystack/phet-core";
 import { saveAs } from "file-saver";
 import { saveUserState, userProperty } from "./firebase-actions.js";
+import { LichessExploreType } from "./getLichessExplore.js";
 
 const random = new Random();
 
@@ -70,6 +71,10 @@ export class Model {
   public readonly lastDrillProperty = new Property<StackMove[] | null>(null);
   public readonly useDrillWeightsProperty = new Property<boolean>(true);
   public readonly lockDrillToColorProperty = new Property<boolean>(false);
+
+  public readonly lichessExploreTypeProperty = new Property<LichessExploreType>(
+    "blitzLow",
+  );
 
   public readonly saveStatusProperty = new EnumerationProperty(
     SaveStatus.NORMAL,
