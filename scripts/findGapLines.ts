@@ -16,10 +16,23 @@ import {
 } from "../src/model/getLichessExplore.js";
 import { getSimplePGN } from "../src/model/getSimplePGN.js";
 
-// npx tsx scripts/findGapLines.ts <color> <history...>
+// npx tsx scripts/findGapLines.ts <type> <color> <history...>
 
-const startingColor = process.argv[2] ?? null;
-const startingHistory = process.argv.slice(3);
+const lichessType = process.argv[2];
+const startingColor = process.argv[3] ?? null;
+const startingHistory = process.argv.slice(4);
+
+const fileSuffix = {
+  blitzLow: "BlitzLow",
+  blitzHigh: "BlitzHigh",
+  rapidLow: "RapidLow",
+  rapidHigh: "RapidHigh",
+  masters: "Masters",
+}[lichessType];
+
+if (!fileSuffix) {
+  console.error(`Invalid type: ${lichessType}`);
+}
 
 if (
   startingColor !== "white" &&
@@ -40,7 +53,7 @@ if (
   scanConflicts(blackNodes, false);
 
   console.log("color", startingColor);
-  console.log("history", startingHistory);
+  console.log("pgn", getSimplePGN(startingHistory));
 
   type MoveEntry = {
     isWhite: boolean;
@@ -51,7 +64,7 @@ if (
   };
 
   const mainExplore: CompactLichessExplore = JSON.parse(
-    fs.readFileSync("./src/data/lichessExploreBlitzLow.json", "utf8"),
+    fs.readFileSync(`./src/data/lichessExplore${fileSuffix}.json`, "utf8"),
   );
   const stockfish: StockfishData = JSON.parse(
     fs.readFileSync("./src/data/stockfish.json", "utf8"),
@@ -129,7 +142,7 @@ if (
         continue;
       }
 
-      console.log(histories[0], baseProbability);
+      // console.log(histories[0], baseProbability);
 
       let totalNextCount = 0;
       for (const explore of explores) {
@@ -200,10 +213,18 @@ if (
   // TODO: how many to print out? all?
 
   for (const entry of sortedEntries.slice(0, 30)) {
+    let probabilityString = entry.probability.toFixed(7);
+    if (entry !== sortedEntries[0]) {
+      probabilityString = probabilityString.replace(
+        /(\.)(0+)(?=[1-9])/,
+        (_, dot, zeros) => dot + " ".repeat(zeros.length),
+      );
+    }
+
     console.log(
       entry.isWhite ? "white" : "black",
+      probabilityString,
       getSimplePGN([...entry.histories[0], entry.move]),
-      entry.probability,
     );
   }
 })();
