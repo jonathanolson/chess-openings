@@ -44,6 +44,7 @@ export const compactStateToNodes = (
   Object.keys(nodes).forEach((fen) => {
     const node = nodes[fen];
     // Clear out existing info!!! -- do this once
+    // TODO: do we need to reinstate this?
     // if ( ( new Chess( fen ).turn() === 'w' ) !== isWhite ) {
     //   node.priority = 0;
     // }

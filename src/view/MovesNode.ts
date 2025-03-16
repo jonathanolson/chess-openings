@@ -154,7 +154,11 @@ export class MovesNode extends VBox {
                 },
               }),
               new Text(
-                moveNode ? moveNode.getCumulativePriority().toFixed(2) : "-",
+                moveNode
+                  ? moveNode
+                      .getSubtreePriority(model.isWhiteProperty.value)
+                      .toFixed(2)
+                  : "-",
                 {
                   font: unboldFont,
                   layoutOptions: {
@@ -192,6 +196,21 @@ export class MovesNode extends VBox {
                     column: 4,
                     row: 0,
                     minContentWidth: 60,
+                    xAlign: "left",
+                  },
+                },
+              ),
+              new Text(
+                moveNode &&
+                moveNode.isWhiteTurn() === model.isWhiteProperty.value
+                  ? moveNode.priority.toFixed(2)
+                  : "-",
+                {
+                  font: unboldFont,
+                  layoutOptions: {
+                    column: 5,
+                    row: 0,
+                    minContentWidth: 45,
                     xAlign: "left",
                   },
                 },

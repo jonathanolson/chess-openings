@@ -16,7 +16,7 @@ export class ChessNode {
   // not saved
   public nodes: Nodes;
   public isWhite: boolean;
-  public isTurnWhite!: boolean;
+  public isTurnWhite!: boolean; // TODO: This is... apparently not set?!?
 
   public serializationId!: number;
 
@@ -97,6 +97,10 @@ export class ChessNode {
     };
   }
 
+  public isWhiteTurn(): boolean {
+    return new Chess(this.fen).turn() === "w";
+  }
+
   public getHistories(): Move[][] {
     const histories: Move[][] = [];
     const scan = (node: ChessNode, history: Move[]) => {
@@ -117,7 +121,7 @@ export class ChessNode {
     return histories;
   }
 
-  public getCumulativePriority(): number {
+  public getSubtreePriority(isWhite: boolean): number {
     const nodes: ChessNode[] = [];
     const scan = (node: ChessNode) => {
       nodes.push(node);
@@ -126,7 +130,12 @@ export class ChessNode {
     };
     scan(this);
 
-    return _.sum(_.uniq(nodes).map((node) => node.priority));
+    // If the turn of the node is white, it means the last move was black.
+    return _.sum(
+      _.uniq(nodes).map((node) =>
+        node.isWhiteTurn() === isWhite ? node.priority : 0,
+      ),
+    );
   }
 
   public static getHistoriesMap(nodes: Nodes): Map<ChessNode, Move[][]> {
