@@ -1,4 +1,11 @@
-import { Line, Node, NodeOptions, Path, Rectangle } from "scenerystack/scenery";
+import {
+  Line,
+  Node,
+  NodeOptions,
+  Path,
+  Rectangle,
+  TPaint,
+} from "scenerystack/scenery";
 import { LichessExploreWins } from "../model/getLichessExplore";
 import { Bounds2 } from "scenerystack/dot";
 import { combineOptions } from "scenerystack/phet-core";
@@ -28,81 +35,41 @@ export class WinStatisticsBar extends Node {
       const total =
         lichessWins.whiteWins + lichessWins.blackWins + lichessWins.draws;
       const toX = (count: number) => (barWidth * count) / total;
+
+      const addRectangle = (n0: number, n1: number, fill: TPaint) => {
+        if (n0 !== n1) {
+          bar.addChild(
+            Rectangle.bounds(new Bounds2(toX(n0), 0, toX(n1), barHeight), {
+              fill: fill,
+              stroke: stroke,
+            }),
+          );
+        }
+      };
+
       if (whiteOnLeft) {
-        bar.addChild(
-          Rectangle.bounds(
-            new Bounds2(toX(0), 0, toX(lichessWins.whiteWins), barHeight),
-            {
-              fill: whiteFill,
-              stroke: stroke,
-            },
-          ),
+        addRectangle(0, lichessWins.whiteWins, whiteFill);
+        addRectangle(
+          lichessWins.whiteWins,
+          lichessWins.whiteWins + lichessWins.draws,
+          drawFill,
         );
-        bar.addChild(
-          Rectangle.bounds(
-            new Bounds2(
-              toX(lichessWins.whiteWins),
-              0,
-              toX(lichessWins.whiteWins + lichessWins.draws),
-              barHeight,
-            ),
-            {
-              fill: drawFill,
-              stroke: stroke,
-            },
-          ),
-        );
-        bar.addChild(
-          Rectangle.bounds(
-            new Bounds2(
-              toX(lichessWins.whiteWins + lichessWins.draws),
-              0,
-              toX(total),
-              barHeight,
-            ),
-            {
-              fill: blackFill,
-              stroke: stroke,
-            },
-          ),
+        addRectangle(
+          lichessWins.whiteWins + lichessWins.draws,
+          total,
+          blackFill,
         );
       } else {
-        bar.addChild(
-          Rectangle.bounds(
-            new Bounds2(toX(0), 0, toX(lichessWins.blackWins), barHeight),
-            {
-              fill: blackFill,
-              stroke: stroke,
-            },
-          ),
+        addRectangle(0, lichessWins.blackWins, blackFill);
+        addRectangle(
+          lichessWins.blackWins,
+          lichessWins.blackWins + lichessWins.draws,
+          drawFill,
         );
-        bar.addChild(
-          Rectangle.bounds(
-            new Bounds2(
-              toX(lichessWins.blackWins),
-              0,
-              toX(lichessWins.blackWins + lichessWins.draws),
-              barHeight,
-            ),
-            {
-              fill: drawFill,
-              stroke: stroke,
-            },
-          ),
-        );
-        bar.addChild(
-          Rectangle.bounds(
-            new Bounds2(
-              toX(lichessWins.blackWins + lichessWins.draws),
-              0,
-              toX(total),
-              barHeight,
-            ),
-            {
-              fill: whiteFill,
-              stroke: stroke,
-            },
-          ),
+        addRectangle(
+          lichessWins.blackWins + lichessWins.draws,
+          total,
+          whiteFill,
         );
       }
 
