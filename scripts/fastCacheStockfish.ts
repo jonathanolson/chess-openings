@@ -35,6 +35,11 @@ if (
   throw new Error(`Invalid order method: ${orderMethod}`);
 }
 
+const boostLines: Move[][] = [
+  ["d4", "d5", "Bf4", "c5"],
+  ["d4", "d5", "Bf4", "c5", "e3", "Nc6"],
+];
+
 os.setPriority(os.constants.priority.PRIORITY_LOW);
 
 (async () => {
@@ -85,8 +90,8 @@ os.setPriority(os.constants.priority.PRIORITY_LOW);
       ...blackFens,
       ...whiteExtendedFens,
       ...blackExtendedFens,
-      ...fenExtend(whiteExtendedFens),
-      ...fenExtend(blackExtendedFens),
+      // ...fenExtend(whiteExtendedFens),
+      // ...fenExtend(blackExtendedFens),
     ]);
   } else if (orderMethod === "popularity") {
     console.log("computing popularity map");
@@ -215,13 +220,27 @@ os.setPriority(os.constants.priority.PRIORITY_LOW);
             }
 
             board.move(move);
-            explore = explore?.m[move] ?? null;
+            explore = explore?.m?.[move] ?? null;
           }
 
           baseProbability += probability;
           if (explore) {
             explores.push(explore);
           }
+        }
+
+        const boostCount = boostLines.filter((line) => {
+          return histories.some((history) => {
+            return (
+              history.length >= line.length &&
+              line.every((move, i) => history[i] === move)
+            );
+          });
+        }).length;
+
+        baseProbability *= Math.pow(25, boostCount);
+        if (boostCount > 0) {
+          baseProbability += 0.001;
         }
 
         console.log(isWhite ? "white" : "black", histories[0], baseProbability);
@@ -282,7 +301,11 @@ os.setPriority(os.constants.priority.PRIORITY_LOW);
             partialNextProbability = moveCount / totalNextCount;
           }
 
-          const nextProbability = baseProbability * partialNextProbability;
+          if (boostCount > 0) {
+            partialNextProbability += 0.001;
+          }
+
+          let nextProbability = baseProbability * partialNextProbability;
 
           // console.log(`  ${move}`, nextProbability);
 
@@ -327,6 +350,10 @@ os.setPriority(os.constants.priority.PRIORITY_LOW);
                   }
                 }
                 partialNextNextProbability = moveCount / totalNextNextCount;
+              }
+
+              if (boostCount > 0) {
+                partialNextNextProbability += 0.001;
               }
 
               const nextNextProbability =

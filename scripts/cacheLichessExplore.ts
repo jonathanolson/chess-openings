@@ -18,6 +18,10 @@ import { getFen } from "../src/model/getFen.js";
 
 // npx tsx scripts/cacheLichessExplore.ts
 
+const FROM_NEW_MOVES = true;
+const ONLY_BLITZ_LOW = true;
+const ONLY_UNDER_HISTORY: Move[] = ["d4", "d5", "Bf4", "c5", "e3", "Nc6"];
+
 (async () => {
   const whiteNodes: Nodes = {};
   const blackNodes: Nodes = {};
@@ -33,6 +37,10 @@ import { getFen } from "../src/model/getFen.js";
     type: LichessExploreType,
     includeExpansion: boolean,
   ) => {
+    if (ONLY_BLITZ_LOW && type !== "blitzLow") {
+      return;
+    }
+
     const mainExplore: CompactLichessExplore = JSON.parse(
       fs.readFileSync(`./src/data/${filename}.json`, "utf8"),
     );
@@ -75,6 +83,20 @@ import { getFen } from "../src/model/getFen.js";
 
     while (histories.length) {
       const history = histories.shift();
+
+      let skip = false;
+      for (
+        let i = 0;
+        i < history.length && i < ONLY_UNDER_HISTORY.length;
+        i++
+      ) {
+        if (ONLY_UNDER_HISTORY[i] !== history[i]) {
+          skip = true;
+        }
+      }
+      if (skip) {
+        continue;
+      }
 
       const board = new Chess();
       history.forEach((move) => {
@@ -157,10 +179,22 @@ import { getFen } from "../src/model/getFen.js";
   };
 
   await scan("lichessExploreBlitzLow", "blitzLow", false);
+  if (FROM_NEW_MOVES) {
+    // TODO: for the future, have an intelligent copy setup?
+    await scan("lichessExploreBlitzLowDeep", "blitzLow", false);
+  }
+
   await scan("lichessExploreMasters", "masters", false);
   await scan("lichessExploreBlitzHigh", "blitzHigh", false);
   await scan("lichessExploreRapidLow", "rapidLow", false);
   await scan("lichessExploreRapidHigh", "rapidHigh", false);
+  if (FROM_NEW_MOVES) {
+    // TODO: for the future, have an intelligent copy setup?
+    await scan("lichessExploreMastersDeep", "masters", false);
+    await scan("lichessExploreBlitzHighDeep", "blitzHigh", false);
+    await scan("lichessExploreRapidLowDeep", "rapidLow", false);
+    await scan("lichessExploreRapidHighDeep", "rapidHigh", false);
+  }
 
   await scan("lichessExploreBlitzLowDeep", "blitzLow", true);
   await scan("lichessExploreMastersDeep", "masters", true);
