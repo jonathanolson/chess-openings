@@ -201,9 +201,11 @@ os.setPriority(os.constants.priority.PRIORITY_LOW);
               possibleMoveCount > 0 ? 1 / possibleMoveCount : 0;
             if (explore && explore.m) {
               const getMoveCount = (move: Move) =>
-                explore.m[move].d[0] +
-                explore.m[move].d[1] +
-                explore.m[move].d[2];
+                explore.m && explore.m[move]
+                  ? explore.m[move].d[0] +
+                    explore.m[move].d[1] +
+                    explore.m[move].d[2]
+                  : 0;
 
               const totalMoveCount = Object.keys(explore.m).reduce(
                 (sum, move) => sum + getMoveCount(move),
