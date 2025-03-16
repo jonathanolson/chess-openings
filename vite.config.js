@@ -3,6 +3,11 @@ import path from "path";
 import { defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
 
+// npx vite --host
+// OR
+// npm run build
+// npx vite preview --host --port=5173
+
 // brew install mkcert nss
 // mkcert -install
 // mkcert localhost 127.0.0.1
