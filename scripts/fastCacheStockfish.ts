@@ -17,7 +17,10 @@ import type {
   StockfishData,
   StockfishEntry,
 } from "../src/model/StockfishData.js";
-import type { CompactLichessExplore } from "../src/model/getLichessExplore.js";
+import {
+  getExploreMoveCount,
+  CompactLichessExplore,
+} from "../src/model/getLichessExplore.js";
 import { initialFen } from "../src/model/initialFen.js";
 
 // npx tsx scripts/cacheStockfish.ts
@@ -142,12 +145,9 @@ os.setPriority(os.constants.priority.PRIORITY_LOW);
       { popularity: number; histories: Move[][] }
     > = {};
 
-    const getExploreMoveCount = (explore: CompactLichessExplore, move: Move) =>
-      explore.m && explore.m[move]
-        ? explore.m[move].d[0] + explore.m[move].d[1] + explore.m[move].d[2]
-        : 0;
-
     const runNodes = (nodes: Nodes, isWhite: boolean) => {
+      const historiesMap = ChessNode.getHistoriesMap(nodes);
+
       const breadthFirstChessNodes: ChessNode[] = [];
       const historyMap = new Map<ChessNode, Move[]>();
 
@@ -186,7 +186,7 @@ os.setPriority(os.constants.priority.PRIORITY_LOW);
         let baseProbability = 0;
         let explores: CompactLichessExplore[] = [];
 
-        const histories = chessNode.getHistories();
+        const histories = historiesMap.get(chessNode)!;
 
         for (const history of histories) {
           let explore: CompactLichessExplore | null = mainExplore;
@@ -245,7 +245,11 @@ os.setPriority(os.constants.priority.PRIORITY_LOW);
           baseProbability += 0.001;
         }
 
-        console.log(isWhite ? "white" : "black", histories[0], baseProbability);
+        console.log(
+          isWhite ? "white" : "black",
+          histories[0].join(" "),
+          baseProbability,
+        );
 
         const addPopularity = (fen: Fen, popularity: number) => {
           if (popularity === 0 && skipZeroProbability) {

@@ -117,3 +117,11 @@ export const getLichessExplore = async (
 
   return lichessExplore[key];
 };
+
+export const getExploreMoveCount = (
+  explore: CompactLichessExplore,
+  move: Move,
+) =>
+  explore.m && explore.m[move]
+    ? explore.m[move].d[0] + explore.m[move].d[1] + explore.m[move].d[2]
+    : 0;

@@ -71,6 +71,7 @@ export class Model {
   public readonly lastDrillProperty = new Property<StackMove[] | null>(null);
   public readonly useDrillWeightsProperty = new Property<boolean>(true);
   public readonly lockDrillToColorProperty = new Property<boolean>(false);
+  public readonly drillFromStartProperty = new Property<boolean>(false);
 
   public readonly lichessExploreTypeProperty = new Property<LichessExploreType>(
     "blitzLow",
@@ -326,7 +327,9 @@ export class Model {
     }
 
     this.stackPositionProperty.value = 0;
-    this.stackProperty.value = this.drillBaseStackProperty.value.slice();
+    this.stackProperty.value = this.drillFromStartProperty.value
+      ? []
+      : this.drillBaseStackProperty.value.slice();
     this.stackPositionProperty.value = this.stackProperty.value.length;
 
     this.drillCheck();

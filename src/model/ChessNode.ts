@@ -129,6 +129,27 @@ export class ChessNode {
     return _.sum(_.uniq(nodes).map((node) => node.priority));
   }
 
+  public static getHistoriesMap(nodes: Nodes): Map<ChessNode, Move[][]> {
+    const rootNode = nodes[initialFen];
+    const map = new Map<ChessNode, Move[][]>();
+
+    for (const chessNode of Object.values(nodes)) {
+      map.set(chessNode, []);
+    }
+
+    const recur = (node: ChessNode, history: Move[]) => {
+      map.get(node)!.push(history);
+
+      for (const move of node.moves) {
+        const subNode = node.moveMap[move];
+        recur(subNode, [...history, move]);
+      }
+    };
+    recur(rootNode, []);
+
+    return map;
+  }
+
   public static connect(parent: ChessNode, child: ChessNode, move: Move): void {
     parent.children.push(child);
     child.parents.push(parent);

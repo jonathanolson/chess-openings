@@ -19,7 +19,7 @@ import { getFen } from "../src/model/getFen.js";
 // npx tsx scripts/cacheLichessExplore.ts
 
 const FROM_NEW_MOVES = true;
-const ONLY_BLITZ_LOW = true;
+const ONLY_BLITZ_LOW = false;
 const ONLY_UNDER_HISTORY: Move[] = ["d4", "d5", "Bf4", "c5", "e3", "Nc6"];
 
 (async () => {

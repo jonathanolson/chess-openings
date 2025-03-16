@@ -14,6 +14,7 @@ import {
   chartBarSolidShape,
   dumbbellSolidShape,
   eraserSolidShape,
+  mapSolidShape,
   fileDownloadSolidShape,
   forwardSolidShape,
   lightbulbSolidShape,
@@ -208,12 +209,13 @@ export class MainControlsNode extends VBox {
             buttonAppearanceStrategy: ButtonNode.FlatAppearanceStrategy,
           },
         ),
-        new RectangularPushButton({
-          content: new Path(chartBarSolidShape, { fill: "black", scale: 0.03 }),
-          accessibleName: "Show Statistics",
-          listener: () => () => {},
+        new BooleanRectangularStickyToggleButton(model.drillFromStartProperty, {
+          content: new Path(mapSolidShape, {
+            fill: "black",
+            scale: 0.03,
+          }),
+          accessibleName: "Start Drills from Starting Position",
           baseColor: "#fff",
-          enabledProperty: model.isNotDrillProperty,
           buttonAppearanceStrategy: ButtonNode.FlatAppearanceStrategy,
         }),
       ],
@@ -225,6 +227,14 @@ export class MainControlsNode extends VBox {
     const debugButtons = new HBox({
       spacing: 5,
       children: [
+        new RectangularPushButton({
+          content: new Path(chartBarSolidShape, { fill: "black", scale: 0.03 }),
+          accessibleName: "Show Statistics",
+          listener: () => () => {},
+          baseColor: "#fff",
+          enabledProperty: model.isNotDrillProperty,
+          buttonAppearanceStrategy: ButtonNode.FlatAppearanceStrategy,
+        }),
         new BooleanRectangularStickyToggleButton(reverseColorsProperty, {
           content: new Path(lightbulbSolidShape, {
             fill: "black",
