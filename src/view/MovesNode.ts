@@ -136,10 +136,11 @@ export class MovesNode extends VBox {
             model.isWhiteProperty.value,
             stockfishWinPercentage,
             {
-              layoutOptions: { column: 1, row: 0 },
+              layoutOptions: { column: 2, row: 0 },
             },
           );
 
+          // TODO: gridbox everything together
           const gridBox = new GridBox({
             spacing: 10,
             children: [
@@ -148,10 +149,22 @@ export class MovesNode extends VBox {
                 layoutOptions: {
                   column: 0,
                   row: 0,
-                  minContentWidth: 55,
+                  minContentWidth: 45,
                   xAlign: "left",
                 },
               }),
+              new Text(
+                moveNode ? moveNode.getCumulativePriority().toFixed(2) : "-",
+                {
+                  font: unboldFont,
+                  layoutOptions: {
+                    column: 1,
+                    row: 0,
+                    minContentWidth: 45,
+                    xAlign: "left",
+                  },
+                },
+              ),
               bar,
               new Text(
                 stockfishEntry
@@ -160,7 +173,7 @@ export class MovesNode extends VBox {
                 {
                   font: unboldFont,
                   layoutOptions: {
-                    column: 2,
+                    column: 3,
                     row: 0,
                     minContentWidth: 40,
                     xAlign: "center",
@@ -176,21 +189,9 @@ export class MovesNode extends VBox {
                 {
                   font: unboldFont,
                   layoutOptions: {
-                    column: 3,
-                    row: 0,
-                    minContentWidth: 60,
-                    xAlign: "left",
-                  },
-                },
-              ),
-              new Text(
-                moveNode ? moveNode.getCumulativePriority().toFixed(2) : "-",
-                {
-                  font: unboldFont,
-                  layoutOptions: {
                     column: 4,
                     row: 0,
-                    minContentWidth: 40,
+                    minContentWidth: 60,
                     xAlign: "left",
                   },
                 },
