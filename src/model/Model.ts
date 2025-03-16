@@ -67,6 +67,9 @@ export class Model {
   public readonly drillBaseStackProperty = new Property<StackMove[]>([]);
   public readonly drillTargetStackProperty = new Property<StackMove[]>([]);
   public readonly drillFailedProperty = new Property<boolean>(false);
+  public readonly failedDrillTargetStackProperty = new Property<
+    StackMove[] | null
+  >(null);
 
   public readonly lastDrillProperty = new Property<StackMove[] | null>(null);
   public readonly useDrillWeightsProperty = new Property<boolean>(true);
@@ -232,6 +235,8 @@ export class Model {
   public toggleDrills(): void {
     this.isDrillProperty.value = !this.isDrillProperty.value;
 
+    this.failedDrillTargetStackProperty.value = null;
+
     if (this.isDrillProperty.value) {
       this.drillBaseStackProperty.value = this.stackProperty.value.slice(
         0,
@@ -274,56 +279,64 @@ export class Model {
   public startNextDrill(): void {
     const possibleStacks: StackMove[][] = [];
 
-    if (
-      !this.lockDrillToColorProperty.value &&
-      this.drillBaseStackProperty.value.length === 0
-    ) {
-      // NOTE: we COULD properly distribute across everything, but this has a nice... feel.
-      this.isWhiteProperty.value = Math.random() < 0.5;
-    }
-
-    const scan = (stack: StackMove[]) => {
-      const lastStackMove = stack[stack.length - 1];
-      const node: ChessNode = lastStackMove
-        ? lastStackMove.getNode(this.nodesProperty.value)
-        : this.nodesProperty.value[initialFen];
-      const history = lastStackMove ? lastStackMove.history : [];
-      assert && assert(node);
-
-      if (node.moves.length) {
-        node.moves.forEach((move) => {
-          const board = new Chess(node.fen);
-          board.move(move);
-          scan([...stack, new StackMove(board, history)]);
-        });
-      } else {
-        possibleStacks.push(stack);
-      }
-    };
-
-    scan(this.drillBaseStackProperty.value);
-
-    if (this.useDrillWeightsProperty.value) {
+    if (this.failedDrillTargetStackProperty.value) {
       this.drillTargetStackProperty.value =
-        possibleStacks[
-          random.sampleProbabilities(
-            possibleStacks.map((stack) => {
-              let prioritySum = 0;
-              // Only include "our" moves
-              // TODO: Only save the priority for "our" moves
-              for (let i = stack.length - 2; i >= -1; i -= 2) {
-                const node =
-                  i >= 0
-                    ? stack[i].getNode(this.nodesProperty.value)
-                    : this.nodesProperty.value[initialFen];
-                prioritySum += node.priority;
-              }
-              return prioritySum;
-            }),
-          )
-        ];
+        this.failedDrillTargetStackProperty.value;
+
+      // Clear it immediately to avoid loops
+      this.failedDrillTargetStackProperty.value = null;
     } else {
-      this.drillTargetStackProperty.value = random.sample(possibleStacks)!;
+      if (
+        !this.lockDrillToColorProperty.value &&
+        this.drillBaseStackProperty.value.length === 0
+      ) {
+        // NOTE: we COULD properly distribute across everything, but this has a nice... feel.
+        this.isWhiteProperty.value = Math.random() < 0.5;
+      }
+
+      const scan = (stack: StackMove[]) => {
+        const lastStackMove = stack[stack.length - 1];
+        const node: ChessNode = lastStackMove
+          ? lastStackMove.getNode(this.nodesProperty.value)
+          : this.nodesProperty.value[initialFen];
+        const history = lastStackMove ? lastStackMove.history : [];
+        assert && assert(node);
+
+        if (node.moves.length) {
+          node.moves.forEach((move) => {
+            const board = new Chess(node.fen);
+            board.move(move);
+            scan([...stack, new StackMove(board, history)]);
+          });
+        } else {
+          possibleStacks.push(stack);
+        }
+      };
+
+      scan(this.drillBaseStackProperty.value);
+
+      if (this.useDrillWeightsProperty.value) {
+        this.drillTargetStackProperty.value =
+          possibleStacks[
+            random.sampleProbabilities(
+              possibleStacks.map((stack) => {
+                let prioritySum = 0;
+                // Only include "our" moves
+                // TODO: Only save the priority for "our" moves
+                for (let i = stack.length - 2; i >= -1; i -= 2) {
+                  const node =
+                    i >= 0
+                      ? stack[i].getNode(this.nodesProperty.value)
+                      : this.nodesProperty.value[initialFen];
+                  prioritySum += node.priority;
+                }
+                return prioritySum;
+              }),
+            )
+          ];
+      } else {
+        this.drillTargetStackProperty.value = random.sample(possibleStacks)!;
+      }
     }
 
     this.stackPositionProperty.value = 0;
@@ -363,6 +376,7 @@ export class Model {
       if (diffIndex < stack.length) {
         // Failed
         targetNode.priority += 3;
+        this.failedDrillTargetStackProperty.value = targetStack.slice(); // defensive copy for now
       } else {
         // Success
         targetNode.priority *= 0.9;
