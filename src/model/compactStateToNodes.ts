@@ -8,6 +8,7 @@ export const compactStateToNodes = (
   nodes: Nodes,
   obj: CompactState,
   isWhite: boolean,
+  allowDuplicates: boolean = false,
 ) => {
   const fens = obj.map(() => "");
   fens[0] = initialFen;
@@ -17,17 +18,35 @@ export const compactStateToNodes = (
     if (!fen) {
       throw new Error("No fen?");
     }
-    const node = new ChessNode(fen, nodes, isWhite);
+
+    if (!allowDuplicates && nodes[fen]) {
+      throw new Error(`duplicate ${index} ${fen}`);
+    }
+
+    const oldNode = nodes[fen];
+
+    const node = oldNode ?? new ChessNode(fen, nodes, isWhite);
     nodes[fen] = node;
+
     if (entry.p) {
-      node.priority = entry.p;
+      if (oldNode) {
+        // TODO: see if additive priorities are OK
+        node.priority += entry.p;
+      } else {
+        node.priority = entry.p;
+      }
     }
     if (entry.m) {
       for (let i = 0; i < entry.m.length; i += 2) {
         const move = entry.m[i] as string;
         const id = entry.m[i + 1] as number;
 
-        node.moves.push(move);
+        if (!allowDuplicates && node.moves.includes(move)) {
+          throw new Error(`duplicate move ${move} ${fen}`);
+        }
+        if (!node.moves.includes(move)) {
+          node.moves.push(move);
+        }
 
         const subBoard = new Chess(fen);
         const verboseMove = subBoard.move(move);
@@ -35,6 +54,11 @@ export const compactStateToNodes = (
           throw new Error("Invalid move during loading?");
         }
 
+        if (fens[id]) {
+          if (fens[id] !== getFen(subBoard)) {
+            throw new Error("Fen mismatch?");
+          }
+        }
         fens[id] = getFen(subBoard);
       }
     }

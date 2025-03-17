@@ -110,10 +110,15 @@ window.Chess = Chess;
       layoutBoundsProperty.value = layoutBoundsProperty.value.withMaxY(
         Math.ceil(scene.bottom) + 2,
       );
-      display.setWidthHeight(
-        layoutBoundsProperty.value.width,
-        layoutBoundsProperty.value.height,
-      );
+      if (
+        layoutBoundsProperty.value.width > 0 &&
+        layoutBoundsProperty.value.height > 0
+      ) {
+        display.setWidthHeight(
+          layoutBoundsProperty.value.width,
+          layoutBoundsProperty.value.height,
+        );
+      }
     }
   });
 
