@@ -39,8 +39,8 @@ if (
 }
 
 const boostLines: Move[][] = [
-  ["d4", "d5", "Bf4", "c5"],
-  ["d4", "d5", "Bf4", "c5", "e3", "Nc6"],
+  // ["d4", "d5", "Bf4", "c5"],
+  // ["d4", "d5", "Bf4", "c5", "e3", "Nc6"],
 ];
 
 os.setPriority(os.constants.priority.PRIORITY_LOW);
