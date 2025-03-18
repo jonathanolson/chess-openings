@@ -22,6 +22,7 @@ import {
   CompactLichessExplore,
 } from "../src/model/getLichessExplore.js";
 import { initialFen } from "../src/model/initialFen.js";
+import { getSimplePGN } from "../src/model/getSimplePGN.js";
 
 // npx tsx scripts/cacheStockfish.ts
 
@@ -77,6 +78,22 @@ os.setPriority(os.constants.priority.PRIORITY_LOW);
   const mainExplore: CompactLichessExplore = JSON.parse(
     fs.readFileSync("./src/data/lichessExploreBlitzLowDeep.json", "utf8"),
   );
+
+  let exampleHistoryMap: Record<Fen, Move[]> = {};
+  const noteHistory = (fen: Fen, history: Move[]) => {
+    if (!exampleHistoryMap[fen]) {
+      exampleHistoryMap[fen] = history;
+    }
+  };
+  const noteHistories = (
+    fen: Fen,
+    histories: Move[][],
+    ...additionalMoves: Move[]
+  ) => {
+    if (histories.length) {
+      noteHistory(fen, [...histories[0], ...additionalMoves]);
+    }
+  };
 
   if (orderMethod === "depth") {
     const whiteFens = Object.keys(whiteNodes);
@@ -187,6 +204,7 @@ os.setPriority(os.constants.priority.PRIORITY_LOW);
         let explores: CompactLichessExplore[] = [];
 
         const histories = historiesMap.get(chessNode)!;
+        noteHistories(chessNode.fen, histories);
 
         for (const history of histories) {
           let explore: CompactLichessExplore | null = mainExplore;
@@ -287,6 +305,8 @@ os.setPriority(os.constants.priority.PRIORITY_LOW);
           nextBoard.move(move);
           const nextFen = getFen(nextBoard);
 
+          noteHistories(nextFen, histories, move);
+
           // If it will be included directly, exclude this!
           if (nodes[nextFen]) {
             continue;
@@ -341,6 +361,8 @@ os.setPriority(os.constants.priority.PRIORITY_LOW);
               nextNextBoard.move(nextMove);
               const nextNextFen = getFen(nextNextBoard);
 
+              noteHistories(nextNextFen, histories, move, nextMove);
+
               // If it will be included directly, exclude this!
               if (nodes[nextNextFen]) {
                 continue;
@@ -391,7 +413,17 @@ os.setPriority(os.constants.priority.PRIORITY_LOW);
     //
     // throw new Error("STILL TESTING");
 
-    fens = orderedPopularityEntries.map((entry) => entry.fen);
+    const whiteFens = Object.keys(whiteNodes);
+    const blackFens = Object.keys(blackNodes);
+    console.log(`whiteFens: ${whiteFens.length}`);
+    console.log(`blackFens: ${blackFens.length}`);
+    const basicFens = _.uniq([...whiteFens, ...blackFens]);
+    console.log(`basic fens: ${basicFens.length}`);
+
+    fens = _.uniq([
+      ...basicFens,
+      ...orderedPopularityEntries.map((entry) => entry.fen),
+    ]);
   } else {
     throw new Error(`Missing order method implementation: ${orderMethod}`);
   }
@@ -495,6 +527,9 @@ os.setPriority(os.constants.priority.PRIORITY_LOW);
 
     if (fen) {
       console.log(fen);
+      if (exampleHistoryMap[fen]) {
+        console.log(getSimplePGN(exampleHistoryMap[fen]));
+      }
       console.log(fens.indexOf(fen));
 
       const entry = await evaluateFen(fen);
