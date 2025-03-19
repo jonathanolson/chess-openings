@@ -1,6 +1,7 @@
 import {
   CompactLichessExplore,
   getLichessExplore,
+  combineCompactLichessExplore,
   LichessExploreType,
 } from "../src/model/getLichessExplore.js";
 import chessOpenings from "../src/data/chessOpenings.js";
@@ -18,8 +19,7 @@ import { getFen } from "../src/model/getFen.js";
 
 // npx tsx scripts/cacheLichessExplore.ts
 
-const FROM_NEW_MOVES = true;
-const ONLY_BLITZ_LOW = false;
+const ONLY_BLITZ_LOW = true;
 const ONLY_UNDER_HISTORY: Move[] = [];
 
 (async () => {
@@ -44,13 +44,6 @@ const ONLY_UNDER_HISTORY: Move[] = [];
     const mainExplore: CompactLichessExplore = JSON.parse(
       fs.readFileSync(`./src/data/${filename}.json`, "utf8"),
     );
-
-    const save = () => {
-      fs.writeFileSync(
-        `./src/data/${filename}.json`,
-        JSON.stringify(mainExplore),
-      );
-    };
 
     // console.log("optimizing");
     // {
@@ -178,23 +171,39 @@ const ONLY_UNDER_HISTORY: Move[] = [];
     }
   };
 
-  await scan("lichessExploreBlitzLow", "blitzLow", false);
-  if (FROM_NEW_MOVES) {
-    // TODO: for the future, have an intelligent copy setup?
-    await scan("lichessExploreBlitzLowDeep", "blitzLow", false);
-  }
+  const combineInto = (smallFile: string, deepFile: string) => {
+    console.log(`combining ${smallFile} into ${deepFile}`);
 
+    const smallExplore: CompactLichessExplore = JSON.parse(
+      fs.readFileSync(`./src/data/${smallFile}.json`, "utf8"),
+    );
+
+    const deepExplore: CompactLichessExplore = JSON.parse(
+      fs.readFileSync(`./src/data/${deepFile}.json`, "utf8"),
+    );
+
+    const combinedExplore = combineCompactLichessExplore(
+      smallExplore,
+      deepExplore,
+    );
+
+    fs.writeFileSync(
+      `./src/data/${deepFile}.json`,
+      JSON.stringify(combinedExplore),
+    );
+  };
+
+  await scan("lichessExploreBlitzLow", "blitzLow", false);
   await scan("lichessExploreMasters", "masters", false);
   await scan("lichessExploreBlitzHigh", "blitzHigh", false);
   await scan("lichessExploreRapidLow", "rapidLow", false);
   await scan("lichessExploreRapidHigh", "rapidHigh", false);
-  if (FROM_NEW_MOVES) {
-    // TODO: for the future, have an intelligent copy setup?
-    await scan("lichessExploreMastersDeep", "masters", false);
-    await scan("lichessExploreBlitzHighDeep", "blitzHigh", false);
-    await scan("lichessExploreRapidLowDeep", "rapidLow", false);
-    await scan("lichessExploreRapidHighDeep", "rapidHigh", false);
-  }
+
+  combineInto("lichessExploreBlitzLow", "lichessExploreBlitzLowDeep");
+  combineInto("lichessExploreMasters", "lichessExploreMastersDeep");
+  combineInto("lichessExploreBlitzHigh", "lichessExploreBlitzHighDeep");
+  combineInto("lichessExploreRapidLow", "lichessExploreRapidLowDeep");
+  combineInto("lichessExploreRapidHigh", "lichessExploreRapidHighDeep");
 
   await scan("lichessExploreBlitzLowDeep", "blitzLow", true);
   await scan("lichessExploreMastersDeep", "masters", true);

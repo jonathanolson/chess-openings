@@ -5,6 +5,7 @@ import lichessExploreBlitzHigh from "../data/lichessExploreBlitzHigh.json";
 import lichessExploreMasters from "../data/lichessExploreMasters.json";
 import lichessExploreRapidLow from "../data/lichessExploreRapidLow.json";
 import lichessExploreRapidHigh from "../data/lichessExploreRapidHigh.json";
+import _ from "lodash";
 
 export const lichessExplore: { [key: string]: LichessExplore } = {};
 
@@ -125,3 +126,38 @@ export const getExploreMoveCount = (
   explore.m && explore.m[move]
     ? explore.m[move].d[0] + explore.m[move].d[1] + explore.m[move].d[2]
     : 0;
+
+// Takes statistics from A first
+export const combineCompactLichessExplore = (
+  a: CompactLichessExplore,
+  b: CompactLichessExplore,
+): CompactLichessExplore => {
+  const result: CompactLichessExplore = {
+    d: a.d,
+  };
+
+  if (a.m) {
+    if (b.m) {
+      const moves = _.uniq([...Object.keys(a.m), ...Object.keys(b.m)]);
+
+      const m: Record<Move, CompactLichessExplore> = {};
+
+      for (const move of moves) {
+        if (a.m[move] && b.m[move]) {
+          m[move] = combineCompactLichessExplore(a.m[move], b.m[move]);
+        } else if (a.m[move]) {
+          m[move] = a.m[move];
+        } else {
+          m[move] = b.m[move];
+        }
+      }
+      result.m = m;
+    } else {
+      result.m = a.m;
+    }
+  } else if (b.m) {
+    result.m = b.m;
+  }
+
+  return result;
+};

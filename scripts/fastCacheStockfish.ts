@@ -19,6 +19,7 @@ import type {
 } from "../src/model/StockfishData.js";
 import {
   getExploreMoveCount,
+  combineCompactLichessExplore,
   CompactLichessExplore,
 } from "../src/model/getLichessExplore.js";
 import { initialFen } from "../src/model/initialFen.js";
@@ -40,8 +41,13 @@ if (
 }
 
 const boostLines: Move[][] = [
-  // ["d4", "d5", "Bf4", "c5"],
+  ["Nf3"],
+  ["Nf3", "d5"],
+  // ["e4", "e6", "d3", "d5", "Nd2"],
+  // // ["d4", "d5", "Bf4", "c5"],
   // ["d4", "d5", "Bf4", "c5", "e3", "Nc6"],
+  // ["d4", "d5", "Bf4", "c5", "e3", "Nc6", "c3"],
+  // ["d4", "d5", "Bf4", "c5", "e3", "Nc6", "Nc3"],
 ];
 
 os.setPriority(os.constants.priority.PRIORITY_LOW);
@@ -75,9 +81,15 @@ os.setPriority(os.constants.priority.PRIORITY_LOW);
     popularity: number;
   };
 
-  const mainExplore: CompactLichessExplore = JSON.parse(
-    fs.readFileSync("./src/data/lichessExploreBlitzLowDeep.json", "utf8"),
+  const smallExplore: CompactLichessExplore = JSON.parse(
+    fs.readFileSync(`./src/data/lichessExploreBlitzLow.json`, "utf8"),
   );
+
+  const deepExplore: CompactLichessExplore = JSON.parse(
+    fs.readFileSync(`./src/data/lichessExploreBlitzLowDeep.json`, "utf8"),
+  );
+
+  const mainExplore = combineCompactLichessExplore(smallExplore, deepExplore);
 
   let exampleHistoryMap: Record<Fen, Move[]> = {};
   const noteHistory = (fen: Fen, history: Move[]) => {
