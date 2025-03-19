@@ -16,11 +16,22 @@ import type { Move } from "../src/model/common.js";
 import { Chess } from "chess.js";
 import { sleep } from "./sleep.js";
 import { getFen } from "../src/model/getFen.js";
+import { initialFen } from "../src/model/initialFen.js";
 
 // npx tsx scripts/cacheLichessExplore.ts
 
 const ONLY_BLITZ_LOW = true;
 const ONLY_UNDER_HISTORY: Move[] = [];
+
+const boostLines: Move[][] = [
+  ["Nf3"],
+  // ["Nf3", "d5"],
+  // ["e4", "e6", "d3", "d5", "Nd2"],
+  // // ["d4", "d5", "Bf4", "c5"],
+  ["d4", "d5", "Bf4", "c5", "e3", "Nc6"],
+  ["d4", "d5", "Bf4", "c5", "e3", "Nc6", "c3"],
+  // ["d4", "d5", "Bf4", "c5", "e3", "Nc6", "Nc3"],
+];
 
 (async () => {
   const whiteNodes: Nodes = {};
@@ -72,70 +83,104 @@ const ONLY_UNDER_HISTORY: Move[] = [];
     // }
     // save();
 
-    const histories: Move[][] = [[]];
+    if (includeExpansion) {
+      type Candidate = {
+        history: Move[];
+        popularity: number;
+      };
 
-    while (histories.length) {
-      const history = histories.shift();
+      const getCandidates = (): Candidate[] => {
+        const candidates: Candidate[] = [];
 
-      let skip = false;
-      for (
-        let i = 0;
-        i < history.length && i < ONLY_UNDER_HISTORY.length;
-        i++
-      ) {
-        if (ONLY_UNDER_HISTORY[i] !== history[i]) {
-          skip = true;
+        const recur = (explore: CompactLichessExplore, moves: Move[]) => {
+          if (explore.m) {
+            // NOTE: This may not be all legal moves!
+
+            for (const move of Object.keys(explore.m)) {
+              const subExplore = explore.m[move];
+
+              if (subExplore.d[0] + subExplore.d[1] + subExplore.d[2] > 0) {
+                recur(subExplore, [...moves, move]);
+              }
+            }
+          } else {
+            let moveExtension = Number.POSITIVE_INFINITY;
+
+            const nodeScan = (nodes: Nodes, isWhite: boolean) => {
+              let chessNode = nodes[initialFen];
+              const existingMoves: Move[] = [];
+
+              for (const move of moves) {
+                if (chessNode.moves.includes(move)) {
+                  existingMoves.push(move);
+                  chessNode = chessNode.moveMap[move];
+                } else {
+                  break;
+                }
+              }
+
+              moveExtension = Math.min(
+                moveExtension,
+                moves.length - existingMoves.length,
+              );
+            };
+            nodeScan(whiteNodes, true);
+            nodeScan(blackNodes, false);
+
+            // TODO: change behavior for whether we are "on color"? -- or not, in case we want to modify our moves hmm
+            if (moveExtension <= 1) {
+              let popularity = explore.d[0] + explore.d[1] + explore.d[2];
+
+              for (const boostLine of boostLines) {
+                if (
+                  moves.length >= boostLine.length &&
+                  boostLine.every((move, i) => moves[i] === move)
+                ) {
+                  popularity *= 25;
+                }
+              }
+
+              candidates.push({
+                history: moves,
+                popularity: popularity,
+              });
+            }
+          }
+        };
+
+        recur(mainExplore, []);
+
+        return _.sortBy(candidates, [(candidate) => -candidate.popularity]);
+      };
+
+      while (true) {
+        const candidates = getCandidates();
+        console.log(`${candidates.length} remaining`);
+        const histories = candidates
+          .slice(0, 30)
+          .map((candidate) => candidate.history);
+
+        if (!histories.length) {
+          break;
         }
-      }
-      if (skip) {
-        continue;
-      }
 
-      const board = new Chess();
-      history.forEach((move) => {
-        board.move(move);
-      });
-
-      const fen = getFen(board);
-
-      const whiteNode = whiteNodes[fen];
-      const blackNode = blackNodes[fen];
-
-      let moves: Move[] = [];
-
-      if (whiteNode) {
-        moves.push(...whiteNode.moves);
-      }
-      if (blackNode) {
-        moves.push(...blackNode.moves);
-      }
-      moves = _.uniq(moves);
-      if (includeExpansion && (whiteNode || blackNode)) {
-        // Include all moves if we have a node and we are including expansions
-        moves = board.moves();
-      }
-
-      // Set up the future
-      for (const move of moves) {
-        histories.push([...history, move]);
-      }
-
-      let explore = mainExplore;
-
-      // console.log(`checking ${history.join(" ")}`);
-
-      const appliedMoves: Move[] = [];
-      const appliedBoard = new Chess();
-
-      const tryFetch = async () => {
-        if (!explore.m) {
+        for (const history of histories) {
           await sleep(5000);
 
           console.log(
-            `[${type}] ${includeExpansion ? "expand " : ""}${appliedMoves.join(" ")}`,
+            `[${type}] ${includeExpansion ? "expand " : ""}${history.join(" ")}`,
           );
 
-          const data = await getLichessExplore(appliedMoves, type);
+          let explore = mainExplore;
+          for (const move of history) {
+            explore = explore.m[move];
+          }
+
+          if (explore.m) {
+            throw new Error("should not have m");
+          }
+
+          const data = await getLichessExplore(history, type);
 
           explore.m = {};
 
@@ -150,23 +195,104 @@ const ONLY_UNDER_HISTORY: Move[] = [];
             JSON.stringify(mainExplore),
           );
         }
-      };
+      }
+    } else {
+      const histories: Move[][] = [[]];
 
-      await tryFetch();
+      while (histories.length) {
+        const history = histories.shift();
 
-      for (const move of history) {
-        // Fill in missing spots lazily (as blanks)
-        if (!explore.m[move]) {
-          explore.m[move] = {
-            d: [0, 0, 0],
-          };
+        let skip = false;
+        for (
+          let i = 0;
+          i < history.length && i < ONLY_UNDER_HISTORY.length;
+          i++
+        ) {
+          if (ONLY_UNDER_HISTORY[i] !== history[i]) {
+            skip = true;
+          }
+        }
+        if (skip) {
+          continue;
         }
 
-        explore = explore.m[move];
-        appliedMoves.push(move);
-        appliedBoard.move(move);
+        const board = new Chess();
+        history.forEach((move) => {
+          board.move(move);
+        });
+
+        const fen = getFen(board);
+
+        const whiteNode = whiteNodes[fen];
+        const blackNode = blackNodes[fen];
+
+        let moves: Move[] = [];
+
+        if (whiteNode) {
+          moves.push(...whiteNode.moves);
+        }
+        if (blackNode) {
+          moves.push(...blackNode.moves);
+        }
+        moves = _.uniq(moves);
+        if (includeExpansion && (whiteNode || blackNode)) {
+          // Include all moves if we have a node and we are including expansions
+          moves = board.moves();
+        }
+
+        // Set up the future
+        for (const move of moves) {
+          histories.push([...history, move]);
+        }
+
+        let explore = mainExplore;
+
+        // console.log(`checking ${history.join(" ")}`);
+
+        const appliedMoves: Move[] = [];
+        const appliedBoard = new Chess();
+
+        const tryFetch = async () => {
+          if (!explore.m) {
+            await sleep(5000);
+
+            console.log(
+              `[${type}] ${includeExpansion ? "expand " : ""}${appliedMoves.join(" ")}`,
+            );
+
+            const data = await getLichessExplore(appliedMoves, type);
+
+            explore.m = {};
+
+            for (const exploreMove of data.moves) {
+              explore.m[exploreMove.san] = {
+                d: [exploreMove.white, exploreMove.draws, exploreMove.black],
+              };
+            }
+
+            fs.writeFileSync(
+              `./src/data/${filename}.json`,
+              JSON.stringify(mainExplore),
+            );
+          }
+        };
 
         await tryFetch();
+
+        for (const move of history) {
+          // Fill in missing spots lazily (as blanks)
+          if (!explore.m[move]) {
+            explore.m[move] = {
+              d: [0, 0, 0],
+            };
+          }
+
+          explore = explore.m[move];
+          appliedMoves.push(move);
+          appliedBoard.move(move);
+
+          await tryFetch();
+        }
       }
     }
   };
