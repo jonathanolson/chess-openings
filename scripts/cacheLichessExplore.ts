@@ -105,15 +105,34 @@ const boostLines: Move[][] = [
             }
           } else {
             let moveExtension = Number.POSITIVE_INFINITY;
+            let popularityCompensation = 1;
 
             const nodeScan = (nodes: Nodes, isWhite: boolean) => {
               let chessNode = nodes[initialFen];
               const existingMoves: Move[] = [];
+              let compensation = 1;
+              let scanExplore = mainExplore;
 
               for (const move of moves) {
                 if (chessNode.moves.includes(move)) {
                   existingMoves.push(move);
                   chessNode = chessNode.moveMap[move];
+
+                  let nextScanExplore = scanExplore.m[move];
+
+                  // compensate for loss of "popularity" on our move
+                  if (moves.indexOf(move) % 2 === (isWhite ? 0 : 1)) {
+                    const basePopularity =
+                      scanExplore.d[0] + scanExplore.d[1] + scanExplore.d[2];
+                    const nextPopularity =
+                      nextScanExplore.d[0] +
+                      nextScanExplore.d[1] +
+                      nextScanExplore.d[2];
+
+                    compensation *= basePopularity / nextPopularity;
+                  }
+
+                  scanExplore = nextScanExplore;
                 } else {
                   break;
                 }
@@ -129,7 +148,9 @@ const boostLines: Move[][] = [
 
             // TODO: change behavior for whether we are "on color"? -- or not, in case we want to modify our moves hmm
             if (moveExtension <= 1) {
-              let popularity = explore.d[0] + explore.d[1] + explore.d[2];
+              let popularity =
+                (explore.d[0] + explore.d[1] + explore.d[2]) *
+                popularityCompensation;
 
               for (const boostLine of boostLines) {
                 if (
