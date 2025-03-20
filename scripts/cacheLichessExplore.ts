@@ -20,11 +20,11 @@ import { initialFen } from "../src/model/initialFen.js";
 
 // npx tsx scripts/cacheLichessExplore.ts
 
-const ONLY_BLITZ_LOW = true;
+const ONLY_BLITZ_LOW = false;
 const ONLY_UNDER_HISTORY: Move[] = [];
 
 const boostLines: Move[][] = [
-  ["Nf3"],
+  // ["Nf3"],
   // ["Nf3", "d5"],
   // ["e4", "e6", "d3", "d5", "Nd2"],
   // // ["d4", "d5", "Bf4", "c5"],
