@@ -15,6 +15,7 @@ import fs from "fs";
 import type { Move } from "../src/model/common.js";
 import { Chess } from "chess.js";
 import { sleep } from "./sleep.js";
+import { boostLines } from "./boostLines.js";
 import { getFen } from "../src/model/getFen.js";
 import { initialFen } from "../src/model/initialFen.js";
 
@@ -22,16 +23,6 @@ import { initialFen } from "../src/model/initialFen.js";
 
 const ONLY_BLITZ_LOW = false;
 const ONLY_UNDER_HISTORY: Move[] = [];
-
-const boostLines: Move[][] = [
-  // ["Nf3"],
-  // ["Nf3", "d5"],
-  // ["e4", "e6", "d3", "d5", "Nd2"],
-  // // ["d4", "d5", "Bf4", "c5"],
-  ["d4", "d5", "Bf4", "c5", "e3", "Nc6"],
-  ["d4", "d5", "Bf4", "c5", "e3", "Nc6", "c3"],
-  // ["d4", "d5", "Bf4", "c5", "e3", "Nc6", "Nc3"],
-];
 
 (async () => {
   const whiteNodes: Nodes = {};

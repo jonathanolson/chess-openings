@@ -24,6 +24,7 @@ import {
 } from "../src/model/getLichessExplore.js";
 import { initialFen } from "../src/model/initialFen.js";
 import { getSimplePGN } from "../src/model/getSimplePGN.js";
+import { boostLines } from "./boostLines.js";
 
 // npx tsx scripts/cacheStockfish.ts
 
@@ -39,16 +40,6 @@ if (
 ) {
   throw new Error(`Invalid order method: ${orderMethod}`);
 }
-
-const boostLines: Move[][] = [
-  ["Nf3"],
-  // ["Nf3", "d5"],
-  // ["e4", "e6", "d3", "d5", "Nd2"],
-  // // ["d4", "d5", "Bf4", "c5"],
-  ["d4", "d5", "Bf4", "c5", "e3", "Nc6"],
-  ["d4", "d5", "Bf4", "c5", "e3", "Nc6", "c3"],
-  // ["d4", "d5", "Bf4", "c5", "e3", "Nc6", "Nc3"],
-];
 
 os.setPriority(os.constants.priority.PRIORITY_LOW);
 
