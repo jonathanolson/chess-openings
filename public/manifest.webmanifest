@@ -1,0 +1,21 @@
+{
+  "name": "Chess Openings - Jonathan Olson",
+  "short_name": "Chess Openings",
+  "description": "Learn chess openings interactively",
+  "start_url": "./",
+  "display": "standalone",
+  "theme_color": "#333",
+  "background_color": "#333",
+  "icons": [
+    {
+      "src": "./images/chess-openings-192px.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "./images/chess-openings-512px.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
