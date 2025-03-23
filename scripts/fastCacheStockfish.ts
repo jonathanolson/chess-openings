@@ -209,36 +209,6 @@ os.setPriority(os.constants.priority.PRIORITY_LOW);
         const histories = historiesMap.get(chessNode)!;
         noteHistories(chessNode.fen, histories);
 
-        // const fullLogHistory = [
-        //   "d4",
-        //   "d5",
-        //   "c4",
-        //   "e6",
-        //   "Nc3",
-        //   "Nf6",
-        //   "cxd5",
-        //   "exd5",
-        //   "Bg5",
-        //   "Be7",
-        //   "e3",
-        //   "O-O",
-        //   "Bd3",
-        //   "c6",
-        //   "Qc2",
-        //   "h6",
-        // ];
-        // const logging = histories.some((history) => {
-        //   const prefix = fullLogHistory.slice(0, -1);
-        //   return (
-        //     history.length === prefix &&
-        //     history.every((move, index) => move === prefix[index])
-        //   );
-        // });
-        let logging =
-          chessNode.fen ===
-          "rnbq1rk1/pp2bppp/2p2n2/3p2B1/3P4/2NBP3/PPQ2PPP/R3K1NR b KQ - 0 1";
-        logging && console.log("logging");
-
         for (const history of histories) {
           let explore: CompactLichessExplore | null = mainExplore;
           let board = new Chess();
@@ -279,15 +249,8 @@ os.setPriority(os.constants.priority.PRIORITY_LOW);
           baseProbability += probability;
           if (explore) {
             explores.push(explore);
-            logging && console.log(history, "explored");
-          } else {
-            logging && console.log(history, "ignored");
           }
         }
-
-        logging && console.log(explores[1].d);
-        logging && console.log(explores[1].m["h6"].d);
-        logging && console.log(explores[1].m["h6"].m["Bh4"].d);
 
         const boostCount = boostLines.filter((line) => {
           return histories.some((history) => {
@@ -301,14 +264,6 @@ os.setPriority(os.constants.priority.PRIORITY_LOW);
         baseProbability *= Math.pow(25, boostCount);
         if (boostCount > 0) {
           baseProbability += 0.001;
-        }
-
-        if (logging) {
-          console.log(
-            isWhite ? "white" : "black",
-            histories[0].join(" "),
-            baseProbability,
-          );
         }
 
         const addPopularity = (fen: Fen, popularity: number) => {
@@ -327,9 +282,6 @@ os.setPriority(os.constants.priority.PRIORITY_LOW);
         };
 
         addPopularity(chessNode.fen, baseProbability);
-
-        logging && console.log("baseProbability", baseProbability);
-        logging && console.log(histories);
 
         if (baseProbability === 0 && skipZeroProbability) {
           continue;
@@ -380,9 +332,6 @@ os.setPriority(os.constants.priority.PRIORITY_LOW);
 
           let nextProbability = baseProbability * partialNextProbability;
 
-          logging && console.log("next", move, nextProbability);
-          // logging && console.log(nextExplores.length);
-
           // console.log(`  ${move}`, nextProbability);
 
           addPopularity(nextFen, nextProbability);
@@ -404,15 +353,6 @@ os.setPriority(os.constants.priority.PRIORITY_LOW);
                 }
               }
             }
-            logging &&
-              move === "h6" &&
-              console.log("totalNextNextCount", totalNextNextCount);
-            // logging &&
-            //   move === "h6" &&
-            //   console.log(
-            //     "nextExplores",
-            //     nextExplores.map( ),
-            //   );
 
             const nextNextMoves = nextBoard.moves();
             for (const nextMove of nextNextMoves) {
@@ -436,11 +376,6 @@ os.setPriority(os.constants.priority.PRIORITY_LOW);
                     moveCount += getExploreMoveCount(explore, nextMove);
                   }
                 }
-                logging && move === "h6" && console.log(nextMove, moveCount);
-                logging &&
-                  move === "h6" &&
-                  nextMove === "Bh4" &&
-                  console.log(nextExplores[1].m["Bh4"].d);
                 partialNextNextProbability = moveCount / totalNextNextCount;
               }
 
@@ -450,10 +385,6 @@ os.setPriority(os.constants.priority.PRIORITY_LOW);
 
               const nextNextProbability =
                 nextProbability * partialNextNextProbability;
-
-              logging &&
-                move === "h6" &&
-                console.log("nextNext", move, nextMove, nextNextProbability);
 
               // console.log(`    ${nextMove}`, nextNextProbability);
 
