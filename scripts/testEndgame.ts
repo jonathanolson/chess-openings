@@ -9,8 +9,8 @@ import { getSimplePGN } from "../src/model/getSimplePGN.js";
 // npx tsx scripts/testEndgame.ts
 
 (async () => {
-  const syzygy = new Syzygy({ cache: 100000 });
-  const maia = new Maia({ elo: 1500, cache: 100000 });
+  const syzygy = new Syzygy({ cache: 1000000 });
+  const maia = new Maia({ elo: 1500, cache: 1000000 });
 
   const queenFen = "8/4k3/6Q1/8/8/8/3K4/8 w - - 0 1";
 
@@ -64,45 +64,95 @@ import { getSimplePGN } from "../src/model/getSimplePGN.js";
     return moveResults[0].move;
   };
 
-  for (let i = 0; i < 10000; i++) {
-    const chess = new Chess(queenFen);
+  let resultNumber = 0;
+  let winCount = 0;
+  let drawCount = 0;
 
-    const history: Move[] = [];
+  let maiaTime = 0;
+  let syzygyTime = 0;
 
-    while (!chess.isGameOver()) {
-      let move: Move;
+  const NUM_THREADS = 4; // yes they are not actually threads I get it
 
-      const fen = getFen(chess);
+  // launch threads
+  const threadPromises: Promise<void>[] = [];
+  for (let i = 0; i < NUM_THREADS; i++) {
+    // TODO: where is our time coming from?
+    threadPromises.push(
+      (async () => {
+        while (true) {
+          const chess = new Chess(queenFen);
 
-      if (chess.turn() === "w") {
-        move = await getMaiaMove(fen);
-      } else {
-        move = await getSyzygyMove(fen);
-      }
+          const history: Move[] = [];
 
-      // console.log(move);
-      history.push(move);
-      chess.move(move);
-    }
+          while (!chess.isGameOver()) {
+            let move: Move;
 
-    console.log(i);
-    console.log(getSimplePGN(history));
+            const fen = getFen(chess);
 
-    if (chess.isCheckmate()) {
-      console.log("Checkmate");
-    } else if (chess.isStalemate()) {
-      console.log("Stalemate");
-    } else if (chess.isThreefoldRepetition()) {
-      console.log("Draw by threefold repetition");
-    } else if (chess.isDrawByFiftyMoves()) {
-      console.log("Draw by 50 moves");
-    } else if (chess.isInsufficientMaterial()) {
-      console.log("Draw by insufficient material");
-    } else {
-      throw new Error("unknown");
-    }
-    console.log("");
+            const start = Date.now();
+
+            if (chess.turn() === "w") {
+              move = await getMaiaMove(fen);
+            } else {
+              move = await getSyzygyMove(fen);
+            }
+
+            const time = Date.now() - start;
+            if (chess.turn() === "w") {
+              maiaTime += time;
+            } else {
+              syzygyTime += time;
+            }
+
+            // console.log(move);
+            history.push(move);
+            chess.move(move);
+          }
+
+          if (chess.isCheckmate()) {
+            winCount++;
+          } else {
+            drawCount++;
+          }
+
+          if (
+            resultNumber < 100 ||
+            (resultNumber < 1000 && resultNumber % 10 === 0) ||
+            (resultNumber < 10000 && resultNumber % 100 === 0) ||
+            resultNumber % 1000 === 0
+          ) {
+            console.log(
+              resultNumber,
+              winCount / (winCount + drawCount),
+              maiaTime / (maiaTime + syzygyTime),
+              maia.cache.size,
+              syzygy.cache.size,
+            );
+            // console.log(getSimplePGN(history));
+
+            // if (chess.isCheckmate()) {
+            //   console.log("Checkmate");
+            // } else if (chess.isStalemate()) {
+            //   console.log("Stalemate");
+            // } else if (chess.isThreefoldRepetition()) {
+            //   console.log("Draw by threefold repetition");
+            // } else if (chess.isDrawByFiftyMoves()) {
+            //   console.log("Draw by 50 moves");
+            // } else if (chess.isInsufficientMaterial()) {
+            //   console.log("Draw by insufficient material");
+            // } else {
+            //   throw new Error("unknown");
+            // }
+            // console.log("");
+          }
+
+          resultNumber++;
+        }
+      })(),
+    );
   }
+
+  await Promise.all(threadPromises);
 
   await maia.dispose();
   await syzygy.dispose();
