@@ -147,7 +147,7 @@ export class Maia {
   }
 }
 
-export const sampleMaiaResult = (result: MaiaResult): string => {
+export const sampleMaiaResult = (result: MaiaResult): Move => {
   const moves = Object.keys(result);
   if (moves.length === 0) {
     throw new Error("MaiaResult is empty; no moves to sample.");
