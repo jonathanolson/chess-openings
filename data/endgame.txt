@@ -1,0 +1,108 @@
+https://syzygy-tables.info/
+
+fortresses:
+  TODO: show extra pawns in chains
+  bishops with rook pawns:
+    8/1b6/8/8/8/5k1p/7P/6K1 w - - 0 1
+    8/1b6/8/8/8/5k1p/7P/6K1 b - - 0 1
+      draw: white avoid h1
+
+    8/8/1b6/8/8/5k1p/7P/6K1 w - - 0 1
+      draw: white stay corner
+
+  knight with rook pawns:
+    8/8/1n6/8/8/5k1p/7P/6K1 w - - 0 1
+    8/8/1n6/8/8/5k1p/7P/6K1 b - - 0 1
+      draw: white stay corner
+
+  bishops with knight pawns:
+    8/1b6/8/8/8/4k1p1/6P1/6K1 w - - 0 1
+    8/1b6/8/8/8/4k1p1/6P1/6K1 b - - 0 1
+      draw: white stay corner
+
+    8/8/1b6/8/8/4k1p1/6P1/6K1 w - - 0 1
+    8/8/1b6/8/8/4k1p1/6P1/6K1 b - - 0 1
+      draw: white stay corner
+
+  knight with knight pawns:
+    8/8/1n6/8/8/4k1p1/6P1/6K1 w - - 0 1
+    8/8/1n6/8/8/4k1p1/6P1/6K1 b - - 0 1
+      black wins (fun!)
+
+basic square win:
+  6k1/8/8/8/8/8/P7/7K w - - 0 1
+
+basic block win:
+  8/4k3/2K5/8/8/8/1P6/8 w - - 0 1
+
+basic 6th rank win:
+  4k3/8/4PK2/8/8/8/8/8 w - - 0 1
+
+basic 6th rank draw:
+  5k2/8/4PK2/8/8/8/8/8 w - - 0 1
+
+basic opposition win:
+  k7/8/2P5/K7/8/8/8/8 w - - 0 1
+
+opposition win:
+  8/6k1/4P3/6K1/8/8/8/8 w - - 0 1
+
+knight pawn draw:
+  8/8/8/8/8/5kp1/7K/8 w - - 0 1
+
+key squares win:
+  5k2/8/4K3/5P2/8/8/8/8 w - - 0 1
+
+mate if king no space back:
+  5k2/8/5K2/5P2/8/8/8/8 w - - 0 1
+
+key squares avoid draw win:
+  7k/5K2/8/6P1/8/8/8/8 b - - 0 1
+
+key squares win:
+  5k2/8/8/8/3PK3/8/8/8 w - - 0 1
+
+opposition key squares draw:
+  8/8/8/1kp5/8/8/8/K7 w - - 0 1
+still draw:
+  8/8/8/1kp5/8/8/8/1K6 w - - 0 1
+  8/8/8/1kp5/8/8/8/1K6 b - - 0 1
+
+opposition only with waiting move:
+  8/6k1/8/6K1/8/6P1/8/8 w - - 0 1
+
+rook pawn draw:
+  8/8/8/8/8/6kp/8/7K w - - 0 1
+  8/8/8/8/8/6kp/8/7K b - - 0 1
+  8/8/8/8/8/6kp/8/6K1 w - - 0 1
+  8/8/8/8/8/6kp/8/6K1 b - - 0 1
+
+draw by trapping:
+  8/8/8/p7/8/1k6/3K4/8 w - - 0 1
+  8/8/8/p7/8/8/3K4/1k6 w - - 0 1
+
+bishop trapping (king in wrong corner - corner same color as bishop):
+  6k1/5R2/6K1/8/8/8/8/6b1 w - - 0 1
+
+bishop no-trapping (king in right corner - opposite of bishop):
+  7k/R7/7K/8/8/1b6/8/8 w - - 0 1
+  7k/R7/7K/8/8/1b6/8/8 b - - 0 1
+
+knight+king on edge vs rook draw:
+  8/8/8/8/8/3k4/r7/3NK3 w - - 0 1
+
+knight+king in corner vs rook BAD:
+  8/8/8/8/8/6k1/r7/6NK w - - 0 1
+  8/8/8/8/8/6k1/r7/6NK b - - 0 1
+  8/8/8/8/8/6k1/r7/6KN b - - 0 1
+  8/8/8/8/8/6k1/r5N1/7K w - - 0 1
+  8/8/8/8/8/6k1/r5N1/7K b - - 0 1
+
+knight in front of pawn:
+  8/K7/8/8/8/1k6/1N1p4/8 w - - 0 1
+  8/K7/8/8/8/8/3pkN2/8 w - - 0 1
+similar:
+  8/8/8/8/5N2/8/2p4K/2k5 w - - 0 1
+
+knight circuit basic test 1:
+  8/8/K7/N7/8/7p/7k/8 w - - 0 1
