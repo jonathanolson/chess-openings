@@ -30,7 +30,20 @@ import { boostLines } from "./boostLines.js";
 
 const depth = 36;
 
-const orderMethod = process.argv[2];
+const lichessType = process.argv[2];
+const orderMethod = process.argv[3];
+
+const fileSuffix = {
+  blitzLow: "BlitzLow",
+  blitzHigh: "BlitzHigh",
+  rapidLow: "RapidLow",
+  rapidHigh: "RapidHigh",
+  masters: "Masters",
+}[lichessType];
+
+if (!fileSuffix) {
+  console.error(`Invalid type: ${lichessType}`);
+}
 
 if (
   orderMethod !== "depth" &&
@@ -73,11 +86,11 @@ os.setPriority(os.constants.priority.PRIORITY_LOW);
   };
 
   const smallExplore: CompactLichessExplore = JSON.parse(
-    fs.readFileSync(`./src/data/lichessExploreBlitzLow.json`, "utf8"),
+    fs.readFileSync(`./src/data/lichessExplore${fileSuffix}.json`, "utf8"),
   );
 
   const deepExplore: CompactLichessExplore = JSON.parse(
-    fs.readFileSync(`./src/data/lichessExploreBlitzLowDeep.json`, "utf8"),
+    fs.readFileSync(`./src/data/lichessExplore${fileSuffix}Deep.json`, "utf8"),
   );
 
   const mainExplore = combineCompactLichessExplore(smallExplore, deepExplore);
