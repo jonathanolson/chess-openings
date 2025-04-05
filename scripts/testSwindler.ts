@@ -73,10 +73,49 @@ import { getFen } from "../src/model/getFen.js";
   const fen4 = "6k1/8/6K1/6P1/8/8/8/8 b - - 0 1"; // after ...Kg8, Kg6
   const fen5 = "7k/5K2/8/6P1/8/8/8/8 b - - 0 1"; // after ...Kh8, Kf7
 
-  console.log(await fenToSwindleMoves(fen5, 0));
-  console.log(await fenToSwindleMoves(fen5, 1));
-  console.log(await fenToSwindleMoves(fen5, 2));
-  console.log(await fenToSwindleMoves(fen5, 3));
+  let time = Date.now();
+
+  console.log(await fenToSwindleMoves(fen1, 0));
+
+  console.log(Date.now() - time);
+  time = Date.now();
+
+  console.log(await fenToSwindleMoves(fen1, 1));
+
+  console.log(Date.now() - time);
+  time = Date.now();
+
+  console.log(await fenToSwindleMoves(fen1, 2));
+
+  console.log(Date.now() - time);
+  time = Date.now();
+
+  console.log(await fenToSwindleMoves(fen1, 3));
+
+  console.log(Date.now() - time);
+  time = Date.now();
+
+  console.log("repeats");
+
+  console.log(await fenToSwindleMoves(fen1, 0));
+
+  console.log(Date.now() - time);
+  time = Date.now();
+
+  console.log(await fenToSwindleMoves(fen1, 1));
+
+  console.log(Date.now() - time);
+  time = Date.now();
+
+  console.log(await fenToSwindleMoves(fen1, 2));
+
+  console.log(Date.now() - time);
+  time = Date.now();
+
+  console.log(await fenToSwindleMoves(fen1, 3));
+
+  console.log(Date.now() - time);
+  time = Date.now();
 
   await swindler.dispose();
 })();

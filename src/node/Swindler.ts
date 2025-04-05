@@ -2,8 +2,7 @@ import { Maia } from "./Maia";
 import { Syzygy } from "./Syzygy";
 import { Gaviota } from "./Gaviota.js";
 import { Fen, Move } from "../model/common.js";
-import { Chess } from "chess.js";
-import { getFen } from "../model/getFen.js";
+import { ChessCache } from "../model/ChessCache.js";
 
 const CACHE_SIZE = 10000000;
 const MAIA_CUTOFF = 0.05;
@@ -27,34 +26,35 @@ export class Swindler {
     cache: CACHE_SIZE,
   });
 
+  private readonly chessCache = new ChessCache({
+    cache: CACHE_SIZE,
+  });
+
   public constructor() {}
 
   public async leafEvaluate(
     fen: Fen,
     isOurMove: boolean,
   ): Promise<SwindlerEval> {
-    const chess = new Chess(fen);
+    const chessData = this.chessCache.get(fen);
 
-    if (chess.isStalemate() || chess.isInsufficientMaterial()) {
+    if (chessData.isStalemate || chessData.isInsufficientMaterial) {
       return { wdl: 0, dtm: 0 };
     }
 
-    if (chess.isCheckmate()) {
+    if (chessData.isCheckmate) {
       return { wdl: isOurMove ? -1 : 1, dtm: 0 };
     }
 
-    const numPieces: number = chess
-      .board()
-      .flat()
-      .filter((piece) => piece !== null).length;
-
-    if (numPieces > 7) {
-      throw new Error(`Perhaps figure out stockfish eval, pieces ${numPieces}`);
+    if (chessData.numPieces > 7) {
+      throw new Error(
+        `Perhaps figure out stockfish eval, pieces ${chessData.numPieces}`,
+      );
     }
 
     const syzygyPromise = this.syzygy.evaluateFen(fen);
     const gaviotaPromise =
-      numPieces <= 5 ? this.gaviota.evaluateFen(fen) : null;
+      chessData.numPieces <= 5 ? this.gaviota.evaluateFen(fen) : null;
 
     const syzygyResult = await syzygyPromise;
     const gaviotaResult = gaviotaPromise ? await gaviotaPromise : null;
@@ -66,13 +66,13 @@ export class Swindler {
   }
 
   public async maiaEvaluate(fen: Fen, depth: number): Promise<SwindlerEval> {
-    const chess = new Chess(fen);
+    const chessData = this.chessCache.get(fen);
 
-    if (chess.isStalemate() || chess.isInsufficientMaterial()) {
+    if (chessData.isStalemate || chessData.isInsufficientMaterial) {
       return { wdl: 0, dtm: 0 };
     }
 
-    if (chess.isCheckmate()) {
+    if (chessData.isCheckmate) {
       return { wdl: 1, dtm: 0 };
     }
 
@@ -91,9 +91,10 @@ export class Swindler {
       if (probability > MAIA_CUTOFF) {
         totalProbability += probability;
 
-        chess.move(move);
-        const moveFen = getFen(chess);
-        chess.undo();
+        const moveFen = chessData.moveMap[move];
+        if (!moveFen) {
+          throw new Error("missing move");
+        }
 
         const subPromise =
           depth > 0
@@ -132,27 +133,24 @@ export class Swindler {
   public async swinderEvaluate(fen: Fen, depth: number): Promise<SwindlerEval> {
     // TODO: add pruning (and thus ordering of the moves)
 
-    const chess = new Chess(fen);
+    const chessData = this.chessCache.get(fen);
 
-    if (chess.isStalemate() || chess.isInsufficientMaterial()) {
+    if (chessData.isStalemate || chessData.isInsufficientMaterial) {
       return { wdl: 0, dtm: 0 };
     }
 
-    if (chess.isCheckmate()) {
+    if (chessData.isCheckmate) {
       return { wdl: -1, dtm: 0 };
     }
 
     // Figure out which moves maintain our WDL (bestMoves)
 
-    const moves = chess.moves();
     const moveDirectEvalMap: Record<Move, SwindlerEval> = {};
 
     let bestWdl = -1;
 
-    for (const move of moves) {
-      chess.move(move);
-      const moveFen = getFen(chess);
-      chess.undo();
+    for (const move of chessData.moves) {
+      const moveFen = chessData.moveMap[move];
 
       // TODO: parallelism
       const moveDirectEval = await this.leafEvaluate(moveFen, false);
@@ -161,7 +159,7 @@ export class Swindler {
       // TODO: potential sort with dtm
     }
 
-    const bestMoves = moves.filter(
+    const bestMoves = chessData.moves.filter(
       (move) => moveDirectEvalMap[move].wdl === bestWdl,
     );
 
@@ -170,9 +168,7 @@ export class Swindler {
 
     // TODO: tablebase lookup on these, since we can choose a guaranteed mate move if we have mate
     for (const move of bestMoves) {
-      chess.move(move);
-      const moveFen = getFen(chess);
-      chess.undo();
+      const moveFen = chessData.moveMap[move];
 
       const moveEval = await this.maiaEvaluate(moveFen, depth);
 
