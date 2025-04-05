@@ -6,7 +6,9 @@ import { getFen } from "../src/model/getFen.js";
 // npx tsx scripts/testSwindler.ts
 
 (async () => {
-  const swindler = new Swindler();
+  const swindler = new Swindler({
+    useEvalCache: true,
+  });
 
   console.log(
     await swindler.leafEvaluate("3k4/8/8/8/3K4/3P4/8/8 b - - 0 1", true),
@@ -73,49 +75,22 @@ import { getFen } from "../src/model/getFen.js";
   const fen4 = "6k1/8/6K1/6P1/8/8/8/8 b - - 0 1"; // after ...Kg8, Kg6
   const fen5 = "7k/5K2/8/6P1/8/8/8/8 b - - 0 1"; // after ...Kh8, Kf7
 
-  let time = Date.now();
+  const fens = [fen0, fen1, fen2, fen3, fen4, fen5];
 
-  console.log(await fenToSwindleMoves(fen1, 0));
+  const fullStart = Date.now();
 
-  console.log(Date.now() - time);
-  time = Date.now();
+  for (const fen of fens) {
+    console.log(fen);
 
-  console.log(await fenToSwindleMoves(fen1, 1));
+    for (let i = 0; i < 6; i++) {
+      let time = Date.now();
+      console.log(await fenToSwindleMoves(fen, i));
 
-  console.log(Date.now() - time);
-  time = Date.now();
+      console.log(Date.now() - time);
+    }
+  }
 
-  console.log(await fenToSwindleMoves(fen1, 2));
-
-  console.log(Date.now() - time);
-  time = Date.now();
-
-  console.log(await fenToSwindleMoves(fen1, 3));
-
-  console.log(Date.now() - time);
-  time = Date.now();
-
-  console.log("repeats");
-
-  console.log(await fenToSwindleMoves(fen1, 0));
-
-  console.log(Date.now() - time);
-  time = Date.now();
-
-  console.log(await fenToSwindleMoves(fen1, 1));
-
-  console.log(Date.now() - time);
-  time = Date.now();
-
-  console.log(await fenToSwindleMoves(fen1, 2));
-
-  console.log(Date.now() - time);
-  time = Date.now();
-
-  console.log(await fenToSwindleMoves(fen1, 3));
-
-  console.log(Date.now() - time);
-  time = Date.now();
+  console.log("Total time:", Date.now() - fullStart);
 
   await swindler.dispose();
 })();

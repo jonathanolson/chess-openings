@@ -3,6 +3,7 @@ import { Syzygy } from "./Syzygy";
 import { Gaviota } from "./Gaviota.js";
 import { Fen, Move } from "../model/common.js";
 import { ChessCache } from "../model/ChessCache.js";
+import { LRUCache } from "lru-cache";
 
 const CACHE_SIZE = 10000000;
 const MAIA_CUTOFF = 0.05;
@@ -10,6 +11,10 @@ const MAIA_CUTOFF = 0.05;
 export type SwindlerEval = {
   wdl: number;
   dtm: number;
+};
+
+export type SwindlerOptions = {
+  useEvalCache: boolean;
 };
 
 export class Swindler {
@@ -30,7 +35,15 @@ export class Swindler {
     cache: CACHE_SIZE,
   });
 
-  public constructor() {}
+  private readonly evalCache: LRUCache<string, SwindlerEval> | null;
+
+  public constructor(options: SwindlerOptions) {
+    this.evalCache = options.useEvalCache
+      ? new LRUCache<string, SwindlerEval>({
+          max: CACHE_SIZE,
+        })
+      : null;
+  }
 
   public async leafEvaluate(
     fen: Fen,
@@ -66,119 +79,137 @@ export class Swindler {
   }
 
   public async maiaEvaluate(fen: Fen, depth: number): Promise<SwindlerEval> {
+    const cacheKey = this.evalCache ? `m${depth}-${fen}` : "";
+    const cachedResult = this.evalCache?.get(cacheKey);
+    if (cachedResult) {
+      return cachedResult;
+    }
+
     const chessData = this.chessCache.get(fen);
 
+    let result: SwindlerEval;
     if (chessData.isStalemate || chessData.isInsufficientMaterial) {
-      return { wdl: 0, dtm: 0 };
-    }
+      result = { wdl: 0, dtm: 0 };
+    } else if (chessData.isCheckmate) {
+      result = { wdl: 1, dtm: 0 };
+    } else {
+      const maiaResult = await this.maia.evaluateFen(fen);
 
-    if (chessData.isCheckmate) {
-      return { wdl: 1, dtm: 0 };
-    }
+      let totalProbability = 0;
+      let wdl = 0;
+      let totalDtmProbability = 0;
+      let dtm = 0;
 
-    const maiaResult = await this.maia.evaluateFen(fen);
+      const promises: Promise<void>[] = [];
 
-    let totalProbability = 0;
-    let wdl = 0;
-    let totalDtmProbability = 0;
-    let dtm = 0;
+      for (const move of Object.keys(maiaResult)) {
+        const probability = maiaResult[move];
 
-    const promises: Promise<void>[] = [];
+        if (probability > MAIA_CUTOFF) {
+          totalProbability += probability;
 
-    for (const move of Object.keys(maiaResult)) {
-      const probability = maiaResult[move];
-
-      if (probability > MAIA_CUTOFF) {
-        totalProbability += probability;
-
-        const moveFen = chessData.moveMap[move];
-        if (!moveFen) {
-          throw new Error("missing move");
-        }
-
-        const subPromise =
-          depth > 0
-            ? this.swinderEvaluate(moveFen, depth - 1)
-            : this.leafEvaluate(moveFen, true);
-
-        // TODO: see if we really are robust to stacking EVERYTHING together?
-        if (depth > 0) {
-          await subPromise;
-        }
-
-        const promise = subPromise.then((evalResult) => {
-          wdl += evalResult.wdl * probability;
-
-          if (evalResult.dtm !== 0) {
-            totalDtmProbability += probability;
-            dtm += evalResult.dtm * probability;
+          const moveFen = chessData.moveMap[move];
+          if (!moveFen) {
+            throw new Error("missing move");
           }
-        });
 
-        promises.push(promise);
+          const subPromise =
+            depth > 0
+              ? this.swinderEvaluate(moveFen, depth - 1)
+              : this.leafEvaluate(moveFen, true);
+
+          // TODO: see if we really are robust to stacking EVERYTHING together?
+          if (depth > 0) {
+            await subPromise;
+          }
+
+          const promise = subPromise.then((evalResult) => {
+            wdl += evalResult.wdl * probability;
+
+            if (evalResult.dtm !== 0) {
+              totalDtmProbability += probability;
+              dtm += evalResult.dtm * probability;
+            }
+          });
+
+          promises.push(promise);
+        }
       }
+
+      await Promise.all(promises);
+
+      wdl /= totalProbability;
+
+      if (totalDtmProbability > 0) {
+        dtm /= totalDtmProbability;
+      }
+
+      result = { wdl, dtm };
     }
 
-    await Promise.all(promises);
+    this.evalCache?.set(cacheKey, result);
 
-    wdl /= totalProbability;
-
-    if (totalDtmProbability > 0) {
-      dtm /= totalDtmProbability;
-    }
-
-    return { wdl, dtm };
+    return result;
   }
 
   public async swinderEvaluate(fen: Fen, depth: number): Promise<SwindlerEval> {
+    const cacheKey = this.evalCache ? `s${depth}-${fen}` : "";
+    const cachedResult = this.evalCache?.get(cacheKey);
+    if (cachedResult) {
+      return cachedResult;
+    }
+
     // TODO: add pruning (and thus ordering of the moves)
 
     const chessData = this.chessCache.get(fen);
 
+    let result: SwindlerEval;
     if (chessData.isStalemate || chessData.isInsufficientMaterial) {
-      return { wdl: 0, dtm: 0 };
-    }
+      result = { wdl: 0, dtm: 0 };
+    } else if (chessData.isCheckmate) {
+      result = { wdl: -1, dtm: 0 };
+    } else {
+      // Figure out which moves maintain our WDL (bestMoves)
 
-    if (chessData.isCheckmate) {
-      return { wdl: -1, dtm: 0 };
-    }
+      const moveDirectEvalMap: Record<Move, SwindlerEval> = {};
 
-    // Figure out which moves maintain our WDL (bestMoves)
+      let bestWdl = -1;
 
-    const moveDirectEvalMap: Record<Move, SwindlerEval> = {};
+      for (const move of chessData.moves) {
+        const moveFen = chessData.moveMap[move];
 
-    let bestWdl = -1;
-
-    for (const move of chessData.moves) {
-      const moveFen = chessData.moveMap[move];
-
-      // TODO: parallelism
-      const moveDirectEval = await this.leafEvaluate(moveFen, false);
-      bestWdl = Math.max(bestWdl, moveDirectEval.wdl);
-      moveDirectEvalMap[move] = moveDirectEval;
-      // TODO: potential sort with dtm
-    }
-
-    const bestMoves = chessData.moves.filter(
-      (move) => moveDirectEvalMap[move].wdl === bestWdl,
-    );
-
-    // let bestMove: Move | null = null;
-    let bestEval: SwindlerEval = { wdl: -1, dtm: 0 };
-
-    // TODO: tablebase lookup on these, since we can choose a guaranteed mate move if we have mate
-    for (const move of bestMoves) {
-      const moveFen = chessData.moveMap[move];
-
-      const moveEval = await this.maiaEvaluate(moveFen, depth);
-
-      if (isSwinderEvalBetter(bestEval, moveEval)) {
-        bestEval = moveEval;
-        // bestMove = move;
+        // TODO: parallelism
+        const moveDirectEval = await this.leafEvaluate(moveFen, false);
+        bestWdl = Math.max(bestWdl, moveDirectEval.wdl);
+        moveDirectEvalMap[move] = moveDirectEval;
+        // TODO: potential sort with dtm
       }
+
+      const bestMoves = chessData.moves.filter(
+        (move) => moveDirectEvalMap[move].wdl === bestWdl,
+      );
+
+      // let bestMove: Move | null = null;
+      let bestEval: SwindlerEval = { wdl: -1, dtm: 0 };
+
+      // TODO: tablebase lookup on these, since we can choose a guaranteed mate move if we have mate
+      for (const move of bestMoves) {
+        const moveFen = chessData.moveMap[move];
+
+        const moveEval = await this.maiaEvaluate(moveFen, depth);
+
+        if (isSwinderEvalBetter(bestEval, moveEval)) {
+          bestEval = moveEval;
+          // bestMove = move;
+        }
+      }
+
+      result = bestEval;
     }
 
-    return bestEval;
+    this.evalCache?.set(cacheKey, result);
+
+    return result;
   }
 
   public async dispose(): Promise<void> {
