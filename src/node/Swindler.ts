@@ -198,9 +198,17 @@ export class Swindler {
 
         const moveEval = await this.maiaEvaluate(moveFen, depth);
 
-        if (isSwinderEvalBetter(bestEval, moveEval)) {
+        if (isSwindlerEvalBetter(bestEval, moveEval)) {
           bestEval = moveEval;
           // bestMove = move;
+        }
+
+        // If we are drawing, and we can't win, we can stop searching.
+        if (
+          bestEval.wdl === 0 &&
+          !(chessData.isWhite ? chessData.canWhiteWin : chessData.canBlackWin)
+        ) {
+          break;
         }
       }
 
@@ -219,7 +227,7 @@ export class Swindler {
   }
 }
 
-export const isSwinderEvalBetter = (
+export const isSwindlerEvalBetter = (
   worseEval: SwindlerEval,
   betterEval: SwindlerEval,
 ): boolean => {
