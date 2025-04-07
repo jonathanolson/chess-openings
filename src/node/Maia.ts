@@ -65,6 +65,13 @@ export class Maia {
 
     return this.lock.runExclusive(() => {
       return new Promise((resolve) => {
+        // RE-check the cache, since we may have already had a request for it.
+        // const cachedResult = this.cache?.get(fen);
+        // if (cachedResult) {
+        //   resolve(cachedResult);
+        // }
+        // TODO: why errors from this?
+
         const result: MaiaResult = {};
         const moveMap: Record<string, Move> = {}; // convert to SAN
 

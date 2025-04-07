@@ -5,7 +5,7 @@ import { Fen, Move } from "../model/common.js";
 import { ChessCache } from "../model/ChessCache.js";
 import { LRUCache } from "lru-cache";
 
-const CACHE_SIZE = 10000000;
+const CACHE_SIZE = 1000000;
 const MAIA_CUTOFF = 0.05;
 
 export type SwindlerEval = {

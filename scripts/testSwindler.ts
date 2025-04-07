@@ -1,6 +1,6 @@
 import { Chess } from "chess.js";
 import { Fen, Move } from "../src/model/common.js";
-import { isSwinderEvalBetter, Swindler } from "../src/node/Swindler.js";
+import { isSwindlerEvalBetter, Swindler } from "../src/node/Swindler.js";
 import { getFen } from "../src/model/getFen.js";
 
 // npx tsx scripts/testSwindler.ts
@@ -39,26 +39,26 @@ import { getFen } from "../src/model/getFen.js";
       dtm: number;
     };
 
-    const evals: EvalWithMove[] = [];
-
-    for (const move of moves) {
+    const evalPromises: Promise<EvalWithMove>[] = moves.map(async (move) => {
       chess.move(move);
       const moveFen = getFen(chess);
       chess.undo();
 
       const evalResult = await swindler.maiaEvaluate(moveFen, depth);
 
-      evals.push({
+      return {
         move,
         wdl: evalResult.wdl,
         dtm: evalResult.dtm,
-      });
-    }
+      };
+    });
+
+    const evals: EvalWithMove[] = await Promise.all(evalPromises);
 
     evals.sort((a, b) => {
-      if (isSwinderEvalBetter(a, b)) {
+      if (isSwindlerEvalBetter(a, b)) {
         return 1;
-      } else if (isSwinderEvalBetter(b, a)) {
+      } else if (isSwindlerEvalBetter(b, a)) {
         return -1;
       } else {
         return 0;
