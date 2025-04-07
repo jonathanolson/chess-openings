@@ -78,7 +78,11 @@ export class Swindler {
     return { wdl: isOurMove ? wdl : -wdl, dtm: isOurMove ? dtm : -dtm };
   }
 
-  public async maiaEvaluate(fen: Fen, depth: number): Promise<SwindlerEval> {
+  public async maiaEvaluate(
+    fen: Fen,
+    depth: number,
+    wdlCutoff = -1,
+  ): Promise<SwindlerEval> {
     const cacheKey = this.evalCache ? `m${depth}-${fen}` : "";
     const cachedResult = this.evalCache?.get(cacheKey);
     if (cachedResult) {
@@ -92,6 +96,8 @@ export class Swindler {
       result = { wdl: 0, dtm: 0 };
     } else if (chessData.isCheckmate) {
       result = { wdl: 1, dtm: 0 };
+    } else if (wdlCutoff < -1) {
+      result = { wdl: -1, dtm: 0 };
     } else {
       const maiaResult = await this.maia.evaluateFen(fen);
 
@@ -99,8 +105,6 @@ export class Swindler {
       let wdl = 0;
       let totalDtmProbability = 0;
       let dtm = 0;
-
-      const promises: Promise<void>[] = [];
 
       for (const move of Object.keys(maiaResult)) {
         const probability = maiaResult[move];
@@ -113,30 +117,27 @@ export class Swindler {
             throw new Error("missing move");
           }
 
-          const subPromise =
-            depth > 0
-              ? this.swinderEvaluate(moveFen, depth - 1)
-              : this.leafEvaluate(moveFen, true);
+          const evalResult = await (depth > 0
+            ? this.swinderEvaluate(moveFen, depth - 1)
+            : this.leafEvaluate(moveFen, true));
 
-          // TODO: see if we really are robust to stacking EVERYTHING together?
-          if (depth > 0) {
-            await subPromise;
+          wdl += evalResult.wdl * probability;
+
+          if (evalResult.dtm !== 0) {
+            totalDtmProbability += probability;
+            dtm += evalResult.dtm * probability;
           }
 
-          const promise = subPromise.then((evalResult) => {
-            wdl += evalResult.wdl * probability;
-
-            if (evalResult.dtm !== 0) {
-              totalDtmProbability += probability;
-              dtm += evalResult.dtm * probability;
-            }
-          });
-
-          promises.push(promise);
+          if (
+            depth > 0 &&
+            wdlCutoff > -1 &&
+            wdl + (1 - totalProbability) < wdlCutoff
+          ) {
+            // TODO: should we return full loss here?
+            break;
+          }
         }
       }
-
-      await Promise.all(promises);
 
       wdl /= totalProbability;
 
@@ -196,7 +197,7 @@ export class Swindler {
       for (const move of bestMoves) {
         const moveFen = chessData.moveMap[move];
 
-        const moveEval = await this.maiaEvaluate(moveFen, depth);
+        const moveEval = await this.maiaEvaluate(moveFen, depth, bestEval.wdl);
 
         if (isSwindlerEvalBetter(bestEval, moveEval)) {
           bestEval = moveEval;
