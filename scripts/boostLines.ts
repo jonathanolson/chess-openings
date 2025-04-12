@@ -1,8 +1,8 @@
 import { Move } from "../src/model/common.js";
 
 export const boostLines: Move[][] = [
-  ["Nf3"],
-  ["Nf3", "d5", "d4", "Nf6", "Nc3"],
+  // ["Nf3"],
+  // ["Nf3", "d5", "d4", "Nf6", "Nc3"],
   // ["Nf3", "d5", "d4", "Nf6", "Nc3", "c5", "Bf4"],
   // ["Nf3", "d5"],
   // ["e4", "e6", "d3", "d5", "Nd2"],
