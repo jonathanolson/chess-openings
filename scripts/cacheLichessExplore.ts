@@ -333,22 +333,22 @@ const ONLY_UNDER_HISTORY: Move[] = [];
     };
 
     await scan("lichessExploreBlitzLow", "blitzLow", false);
+    await scan("lichessExploreRapidHigh", "rapidHigh", false);
     await scan("lichessExploreMasters", "masters", false);
     await scan("lichessExploreBlitzHigh", "blitzHigh", false);
     await scan("lichessExploreRapidLow", "rapidLow", false);
-    await scan("lichessExploreRapidHigh", "rapidHigh", false);
 
     combineInto("lichessExploreBlitzLow", "lichessExploreBlitzLowDeep");
+    combineInto("lichessExploreRapidHigh", "lichessExploreRapidHighDeep");
     combineInto("lichessExploreMasters", "lichessExploreMastersDeep");
     combineInto("lichessExploreBlitzHigh", "lichessExploreBlitzHighDeep");
     combineInto("lichessExploreRapidLow", "lichessExploreRapidLowDeep");
-    combineInto("lichessExploreRapidHigh", "lichessExploreRapidHighDeep");
 
     await scan("lichessExploreBlitzLowDeep", "blitzLow", true);
+    await scan("lichessExploreRapidHighDeep", "rapidHigh", true);
     await scan("lichessExploreMastersDeep", "masters", true);
     await scan("lichessExploreBlitzHighDeep", "blitzHigh", true);
     await scan("lichessExploreRapidLowDeep", "rapidLow", true);
-    await scan("lichessExploreRapidHighDeep", "rapidHigh", true);
   };
 
   let failed = true;
