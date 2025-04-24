@@ -17,6 +17,18 @@ export const lichessExploreTypeMap = {
   rapidHigh: "lichess?variant=standard&speeds=rapid&ratings=2000,2200,2500",
 };
 
+export const lichessExploreTypes = Object.keys(
+  lichessExploreTypeMap,
+) as LichessExploreType[];
+
+export const lichessExploreTypeFileMap = {
+  blitzLow: "lichessExploreBlitzLow",
+  blitzHigh: "lichessExploreBlitzHigh",
+  masters: "lichessExploreMasters",
+  rapidLow: "lichessExploreRapidLow",
+  rapidHigh: "lichessExploreRapidHigh",
+};
+
 export type CompactLichessExplore = {
   // white win, draw, black win
   d: [number, number, number];

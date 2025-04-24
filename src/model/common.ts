@@ -102,3 +102,21 @@ export type SaveState = {
   white: CompactStateEntry[];
   black: CompactStateEntry[];
 };
+export type CompactFenEntry = {
+  // stockfish (depth 36) evals
+  s?: number; // score
+  sm?: "mate"; // if mate
+
+  m?: Record<
+    Move,
+    {
+      i?: number; // index of the move into the main list
+      bl?: [number, number, number]; // blitzLow
+      bh?: [number, number, number]; // blitzHigh
+      ma?: [number, number, number]; // masters
+      rl?: [number, number, number]; // rapidLow
+      rh?: [number, number, number]; // rapidHigh
+    }
+  >;
+};
+export type CompactFenData = CompactFenEntry[];
