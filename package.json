@@ -8,7 +8,7 @@
   "repository": "https://github.com/jonathanolson/chess-openings",
   "scripts": {
     "start": "npx vite",
-    "build": "NODE_OPTIONS='--max-old-space-size=8192' npx tsc && NODE_OPTIONS='--max-old-space-size=8192' npx vite build",
+    "build": "NODE_OPTIONS='--max-old-space-size=8192' npx tsc && NODE_OPTIONS='--max-old-space-size=16384' npx vite build --debug",
     "copy-to-website": "rm -Rf ../jonathanolson.github.com/chess-openings && cp -R dist ../jonathanolson.github.com/chess-openings"
   },
   "dependencies": {

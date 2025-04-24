@@ -28,6 +28,20 @@ const config = {
       },
     },
   },
+
+  plugins: [
+    {
+      name: "log-imports",
+      resolveId(source, importer) {
+        console.log(`[resolve] ${importer} → ${source}`);
+        return null; // let Vite continue resolving as usual
+      },
+      load(id) {
+        console.log(`[load] ${id}`);
+        return null; // let Vite load it normally
+      },
+    },
+  ],
 };
 
 if (fs.existsSync(httpsKeyFile) && fs.existsSync(httpsCertFile)) {
