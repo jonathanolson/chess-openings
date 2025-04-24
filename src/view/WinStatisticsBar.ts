@@ -18,7 +18,7 @@ const whiteFill = "#fff";
 const drawFill = "#888";
 const blackFill = "#000";
 const whiteTextFill = "rgba(0,0,0,0.3)";
-const blackTextFill = "rgba(255,255,255,0.4)";
+const blackTextFill = "rgba(255,255,255,0.45)";
 const barHeight = 15;
 const textPadding = 3;
 
@@ -41,21 +41,6 @@ export class WinStatisticsBar extends Node {
   });
   private rightRectangle: Rectangle = new Rectangle({
     stroke: stroke,
-  });
-  private evenLineLight: Line = new Line({
-    y1: barHeight / 2,
-    y2: barHeight,
-    stroke: "rgba(255,255,255,0.3)",
-    lineCap: "butt",
-    lineDash: [2, 2],
-  });
-  private evenLineDark: Line = new Line({
-    y1: barHeight / 2,
-    y2: barHeight,
-    stroke: "rgba(0,0,0,0.3)",
-    lineCap: "butt",
-    lineDash: [2, 2],
-    lineDashOffset: 2,
   });
   private leftText: Text = new Text("%", {
     font: boldFont,
@@ -87,8 +72,6 @@ export class WinStatisticsBar extends Node {
       this.leftRectangle,
       this.drawRectangle,
       this.rightRectangle,
-      this.evenLineLight,
-      this.evenLineDark,
       this.leftText,
       this.rightText,
       this.winPercentageLine,
@@ -104,9 +87,6 @@ export class WinStatisticsBar extends Node {
     winPercentage: number | null,
   ): void {
     const barWidth = 150;
-
-    this.evenLineLight.x = barWidth / 2;
-    this.evenLineDark.x = barWidth / 2;
 
     const totalResults = lichessWins
       ? lichessWins.whiteWins + lichessWins.blackWins + lichessWins.draws
