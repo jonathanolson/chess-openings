@@ -26,6 +26,10 @@ import {
   stockfishEntryToString,
   stockfishEntryToWinPercentage,
 } from "../model/StockfishData.js";
+import { getExploreStatistics } from "../model/getExploreStatistics.js";
+
+// TODO: remove this
+window.getExploreStatistics = getExploreStatistics;
 
 export class MovesNode extends VBox {
   public constructor(model: Model) {
