@@ -27,6 +27,8 @@ import {
   loadedFullFenData,
 } from "../model/fenDataSource.js";
 import { ExploreStatistics } from "../model/ExploreStatistics.js";
+import _ from "lodash";
+import { PopularityStatisticsBar } from "./PopularityStatisticsBar.js";
 
 export class MovesNode extends VBox {
   public constructor(model: Model) {
@@ -118,6 +120,19 @@ export class MovesNode extends VBox {
         return;
       }
 
+      const lichessTotal = lichessSummary
+        ? _.sum(
+            moves.map((move) => {
+              const lichessWins = lichessSummary[move];
+              return lichessWins
+                ? lichessWins.whiteWins +
+                    lichessWins.blackWins +
+                    lichessWins.draws
+                : 0;
+            }),
+          )
+        : 0;
+
       this.children = this.children.concat(
         moves.map((move, i) => {
           const lichessWins: LichessExploreWins | null =
@@ -168,7 +183,7 @@ export class MovesNode extends VBox {
                 moveNode
                   ? moveNode
                       .getSubtreePriority(model.isWhiteProperty.value)
-                      .toFixed(2)
+                      .toFixed(1)
                   : "-",
                 {
                   font: unboldFont,
@@ -176,7 +191,7 @@ export class MovesNode extends VBox {
                     column: 1,
                     row: 0,
                     minContentWidth: 45,
-                    xAlign: "left",
+                    xAlign: "right",
                   },
                 },
               ),
@@ -195,19 +210,17 @@ export class MovesNode extends VBox {
                   },
                 },
               ),
-              new Text(
+              new PopularityStatisticsBar(
                 lichessWins
                   ? lichessWins.whiteWins +
                     lichessWins.blackWins +
                     lichessWins.draws
-                  : "",
+                  : 0,
+                lichessTotal,
                 {
-                  font: unboldFont,
                   layoutOptions: {
                     column: 4,
                     row: 0,
-                    minContentWidth: 60,
-                    xAlign: "left",
                   },
                 },
               ),

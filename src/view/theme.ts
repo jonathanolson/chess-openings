@@ -112,3 +112,12 @@ export const stackNodeNotInNodesColorProperty = new LightDarkColorProperty(
   "#eee",
   "#222",
 );
+
+export const moveNodePopularityBarColorProperty = new LightDarkColorProperty(
+  "#000",
+  "rgb(204,204,204)",
+);
+export const moveNodePopularityCountColorProperty = new LightDarkColorProperty(
+  "#ccc",
+  "#333",
+);
