@@ -1,7 +1,15 @@
-import { Line, Node, NodeOptions, Path, Rectangle } from "scenerystack/scenery";
+import {
+  Line,
+  Node,
+  NodeOptions,
+  Path,
+  Rectangle,
+  Text,
+} from "scenerystack/scenery";
 import { LichessExploreWins } from "../model/getLichessExplore";
-import { Bounds2 } from "scenerystack/dot";
+import { Bounds2, toFixed } from "scenerystack/dot";
 import { Shape } from "scenerystack/kite";
+import { boldFont } from "./theme.js";
 
 export type WinStatisticsBarOptions = NodeOptions;
 
@@ -9,9 +17,12 @@ const stroke = "#888";
 const whiteFill = "#fff";
 const drawFill = "#888";
 const blackFill = "#000";
+const whiteTextFill = "rgba(0,0,0,0.3)";
+const blackTextFill = "rgba(255,255,255,0.4)";
 const barHeight = 15;
+const textPadding = 3;
 
-const triangleExtent = 5;
+const triangleExtent = 4;
 
 const triangleShape = new Shape()
   .moveTo(-triangleExtent, 0)
@@ -30,6 +41,29 @@ export class WinStatisticsBar extends Node {
   });
   private rightRectangle: Rectangle = new Rectangle({
     stroke: stroke,
+  });
+  private evenLineLight: Line = new Line({
+    y1: barHeight / 2,
+    y2: barHeight,
+    stroke: "rgba(255,255,255,0.3)",
+    lineCap: "butt",
+    lineDash: [2, 2],
+  });
+  private evenLineDark: Line = new Line({
+    y1: barHeight / 2,
+    y2: barHeight,
+    stroke: "rgba(0,0,0,0.3)",
+    lineCap: "butt",
+    lineDash: [2, 2],
+    lineDashOffset: 2,
+  });
+  private leftText: Text = new Text("%", {
+    font: boldFont,
+    scale: 0.7,
+  });
+  private rightText: Text = new Text("%", {
+    font: boldFont,
+    scale: 0.7,
   });
   private winPercentageLine: Line = new Line({
     y2: barHeight * 0.75,
@@ -53,6 +87,10 @@ export class WinStatisticsBar extends Node {
       this.leftRectangle,
       this.drawRectangle,
       this.rightRectangle,
+      this.evenLineLight,
+      this.evenLineDark,
+      this.leftText,
+      this.rightText,
       this.winPercentageLine,
       this.winPercentageTriangle,
     ];
@@ -67,14 +105,20 @@ export class WinStatisticsBar extends Node {
   ): void {
     const barWidth = 150;
 
+    this.evenLineLight.x = barWidth / 2;
+    this.evenLineDark.x = barWidth / 2;
+
     const totalResults = lichessWins
       ? lichessWins.whiteWins + lichessWins.blackWins + lichessWins.draws
       : 0;
     const hasResults = totalResults > 0;
+    const barWidthSupportsText = barWidth > 50;
 
     this.leftRectangle.visible = hasResults;
     this.drawRectangle.visible = hasResults;
     this.rightRectangle.visible = hasResults;
+    this.leftText.visible = hasResults && barWidthSupportsText;
+    this.rightText.visible = hasResults && barWidthSupportsText;
 
     // TODO: proper positioning if no results
 
@@ -86,6 +130,8 @@ export class WinStatisticsBar extends Node {
     if (hasResults && lichessWins) {
       this.leftRectangle.fill = whiteOnLeft ? whiteFill : blackFill;
       this.rightRectangle.fill = whiteOnLeft ? blackFill : whiteFill;
+      this.leftText.fill = whiteOnLeft ? whiteTextFill : blackTextFill;
+      this.rightText.fill = whiteOnLeft ? blackTextFill : whiteTextFill;
 
       const toX = (count: number) => (barWidth * count) / totalResults;
 
@@ -94,6 +140,18 @@ export class WinStatisticsBar extends Node {
         : lichessWins.blackWins;
       drawLeft = toX(leftWins);
       drawRight = toX(leftWins + lichessWins.draws);
+
+      if (barWidthSupportsText) {
+        this.leftText.string = `${toFixed((leftWins / totalResults) * 100, 1)}%`;
+        this.rightText.string = `${toFixed(
+          ((totalResults - leftWins - lichessWins.draws) / totalResults) * 100,
+          1,
+        )}%`;
+        this.leftText.left = textPadding;
+        this.leftText.centerY = barHeight / 2;
+        this.rightText.right = barWidth - textPadding;
+        this.rightText.centerY = barHeight / 2;
+      }
     }
     this.leftRectangle.rectBounds = new Bounds2(
       farLeft,
@@ -113,6 +171,17 @@ export class WinStatisticsBar extends Node {
       farRight,
       barHeight,
     );
+
+    if (hasResults && barWidthSupportsText) {
+      // NOTE: Should have been computed above?
+    } else {
+      this.leftText.string = "%";
+      this.rightText.string = "%";
+      this.leftText.left = textPadding;
+      this.rightText.left = textPadding;
+      this.leftText.top = 0;
+      this.rightText.top = 0;
+    }
 
     const hasWinPercentage = winPercentage !== null;
     this.winPercentageLine.visible = hasWinPercentage;
