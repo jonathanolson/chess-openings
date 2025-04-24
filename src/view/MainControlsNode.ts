@@ -7,7 +7,7 @@ import {
   RectangularPushButton,
 } from "scenerystack/sun";
 import { reverseColorsProperty, uiForegroundColorProperty } from "./theme.js";
-import { DerivedProperty } from "scenerystack/axon";
+import { DerivedProperty, Property } from "scenerystack/axon";
 import { StackMove } from "../model/StackMove.js";
 import {
   backwardSolidShape,
@@ -24,9 +24,14 @@ import {
   signOutAltSolidShape,
   stepBackwardSolidShape,
   stepForwardSolidShape,
+  databaseSolidShape,
 } from "scenery-fontawesome-5";
 import { TooltipListener, ViewContext } from "scenery-toolkit";
 import { logOut } from "../model/firebase-actions.js";
+import {
+  loadedFullFenDataEmitter,
+  loadFullFenData,
+} from "../model/fenDataSource.js";
 
 export class MainControlsNode extends VBox {
   public constructor(model: Model, viewContext: ViewContext) {
@@ -46,6 +51,7 @@ export class MainControlsNode extends VBox {
         }
       },
     );
+    const loadFullDataColorProperty = new Property<Color>(Color.WHITE);
 
     const genericTooltipListener = new TooltipListener(viewContext);
 
@@ -242,6 +248,21 @@ export class MainControlsNode extends VBox {
           }),
           accessibleName: "Toggle Light/Dark Colors",
           baseColor: "#fff",
+          buttonAppearanceStrategy: ButtonNode.FlatAppearanceStrategy,
+        }),
+        new RectangularPushButton({
+          content: new Path(databaseSolidShape, { fill: "black", scale: 0.03 }),
+          accessibleName: "Load Full Data",
+          listener: () => {
+            loadFullFenData();
+
+            loadFullDataColorProperty.value = new Color("#aaf");
+            loadedFullFenDataEmitter.addListener(() => {
+              loadFullDataColorProperty.value = new Color("#afa");
+            });
+          },
+          baseColor: loadFullDataColorProperty,
+          enabledProperty: model.isNotDrillProperty,
           buttonAppearanceStrategy: ButtonNode.FlatAppearanceStrategy,
         }),
       ],

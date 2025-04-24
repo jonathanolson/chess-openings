@@ -16,15 +16,16 @@ import { WinStatisticsBar } from "./WinStatisticsBar.js";
 import { LichessExploreWins } from "../model/getLichessExplore.js";
 import { initialFen } from "../model/initialFen.js";
 import { Fen, Move } from "../model/common.js";
-import stockfishJSON from "../data/stockfish-snapshot.json";
 import {
-  StockfishData,
   StockfishEntry,
   stockfishEntryToString,
   stockfishEntryToWinPercentage,
 } from "../model/StockfishData.js";
 import { getExploreStatistics } from "../model/getExploreStatistics.js";
-import { loadedFullFenData } from "../model/fenDataSource.js";
+import {
+  fenDataStockfishData,
+  loadedFullFenData,
+} from "../model/fenDataSource.js";
 import { ExploreStatistics } from "../model/ExploreStatistics.js";
 
 export class MovesNode extends VBox {
@@ -129,7 +130,7 @@ export class MovesNode extends VBox {
           moveBoard.move(move);
           const moveFen = getFen(moveBoard);
           const stockfishEntry: StockfishEntry | null =
-            (stockfishJSON as StockfishData)[moveFen] ?? null;
+            fenDataStockfishData[moveFen] ?? null;
 
           const reversePercentIfBlack = (percent: number) =>
             model.isWhiteProperty.value ? percent : 100 - percent;
