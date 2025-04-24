@@ -13,10 +13,7 @@ import { getFen } from "../model/getFen.js";
 import { Chess } from "chess.js";
 import { boldFont, unboldFont } from "./theme.js";
 import { WinStatisticsBar } from "./WinStatisticsBar.js";
-import {
-  getCompactLichessExplore,
-  LichessExploreWins,
-} from "../model/getLichessExplore.js";
+import { LichessExploreWins } from "../model/getLichessExplore.js";
 import { initialFen } from "../model/initialFen.js";
 import { Fen, Move } from "../model/common.js";
 import stockfishJSON from "../data/stockfish-snapshot.json";
@@ -27,9 +24,8 @@ import {
   stockfishEntryToWinPercentage,
 } from "../model/StockfishData.js";
 import { getExploreStatistics } from "../model/getExploreStatistics.js";
-
-// TODO: remove this
-window.getExploreStatistics = getExploreStatistics;
+import { loadedFullFenData } from "../model/fenDataSource.js";
+import { ExploreStatistics } from "../model/ExploreStatistics.js";
 
 export class MovesNode extends VBox {
   public constructor(model: Model) {
@@ -51,34 +47,44 @@ export class MovesNode extends VBox {
 
       const lichessType = model.lichessExploreTypeProperty.value;
 
-      // TODO: determine perhaps storing summaries by... the type? We will want to change the type, no?
-      let lichessSummary =
-        stackMove?.lichessSummaryMap?.get(lichessType) ?? null;
+      let exploreStatistics =
+        stackMove?.exploreStatisticsMap?.get(lichessType) ?? null;
 
-      if (!lichessSummary) {
-        const possibleSummary = getCompactLichessExplore(
+      const statisticsPotentiallyOutOfDate =
+        !!exploreStatistics &&
+        loadedFullFenData &&
+        !exploreStatistics.hasTranspositions;
+
+      // If we don't have it (OR if we have since loaded full data)
+      if (!exploreStatistics || statisticsPotentiallyOutOfDate) {
+        const possibleExploreStatistics = getExploreStatistics(
           stackMove?.history ?? [],
-          model.lichessExploreTypeProperty.value,
+          lichessType,
+          !statisticsPotentiallyOutOfDate, // if we are potentially out-of-date, DO NOT force a lichess lookup
         );
 
-        if (possibleSummary instanceof Promise) {
-          possibleSummary.then((summary) => {
+        if (possibleExploreStatistics instanceof ExploreStatistics) {
+          exploreStatistics = possibleExploreStatistics;
+          if (stackMove) {
+            stackMove.exploreStatisticsMap.set(lichessType, exploreStatistics);
+          }
+        } else if (possibleExploreStatistics instanceof Promise) {
+          possibleExploreStatistics.then((statistics) => {
             if (stackMove) {
-              stackMove.lichessSummaryMap.set(lichessType, summary);
+              stackMove.exploreStatisticsMap.set(lichessType, statistics);
               stackLichessUpdatedEmitter.emit();
             }
           });
         } else {
-          lichessSummary = possibleSummary;
-          if (stackMove) {
-            stackMove.lichessSummaryMap.set(lichessType, lichessSummary);
-          }
+          // nothing, we should already have the explore statistics
         }
       }
 
       const allMoves = stackMove?.board.moves() ?? new Chess().moves();
 
       const moves: Move[] = [];
+
+      const lichessSummary = exploreStatistics?.summary ?? null;
 
       // in both (lichess order)
       if (lichessSummary && node) {

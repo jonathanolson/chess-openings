@@ -1,10 +1,5 @@
 import { LichessExplore, Move } from "./common";
 import { getLichessMovesString } from "./getLichessMovesString.js";
-import lichessExploreBlitzLow from "../data/lichessExploreBlitzLow.json";
-import lichessExploreBlitzHigh from "../data/lichessExploreBlitzHigh.json";
-import lichessExploreMasters from "../data/lichessExploreMasters.json";
-import lichessExploreRapidLow from "../data/lichessExploreRapidLow.json";
-import lichessExploreRapidHigh from "../data/lichessExploreRapidHigh.json";
 import _ from "lodash";
 
 export const lichessExplore: { [key: string]: LichessExplore } = {};
@@ -43,64 +38,6 @@ export type LichessExploreWins = {
   blackWins: number;
 };
 export type LichessExploreSummary = Record<Move, LichessExploreWins>;
-
-export const getCompactLichessExplore = (
-  history: Move[],
-  type: LichessExploreType,
-): LichessExploreSummary | Promise<LichessExploreSummary> => {
-  // TODO: do we separate this out to a different file due to the data dependency?
-
-  let explore = {
-    blitzLow: lichessExploreBlitzLow,
-    blitzHigh: lichessExploreBlitzHigh,
-    masters: lichessExploreMasters,
-    rapidLow: lichessExploreRapidLow,
-    rapidHigh: lichessExploreRapidHigh,
-  }[type] as unknown as CompactLichessExplore;
-
-  let success = true;
-  for (const move of history) {
-    if (!explore.m || !explore.m[move]) {
-      success = false;
-      break;
-    }
-
-    explore = explore.m[move];
-  }
-
-  if (success && explore.m) {
-    const summary: LichessExploreSummary = {};
-
-    for (const move of Object.keys(explore.m)) {
-      const data = explore.m[move].d;
-      summary[move] = {
-        whiteWins: data[0],
-        draws: data[1],
-        blackWins: data[2],
-      };
-    }
-
-    return summary;
-  }
-
-  return new Promise((resolve) => {
-    (async () => {
-      const lichessExplore = await getLichessExplore(history, type);
-
-      const summary: LichessExploreSummary = {};
-
-      for (const move of lichessExplore.moves) {
-        summary[move.san] = {
-          whiteWins: move.white,
-          draws: move.draws,
-          blackWins: move.black,
-        };
-      }
-
-      resolve(summary);
-    })();
-  });
-};
 
 export const getLichessExplore = async (
   history: Move[],

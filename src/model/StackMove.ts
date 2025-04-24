@@ -4,8 +4,8 @@ import { Fen, LichessExplore, Move, VerboseMove } from "./common";
 import { assert } from "scenerystack/assert";
 import { getFen } from "./getFen";
 import { getLichessExplore, LichessExploreType } from "./getLichessExplore.js";
-import type { LichessExploreSummary } from "./getLichessExplore.js";
 import { ChessNode, Nodes } from "./ChessNode.js";
+import { ExploreStatistics } from "./ExploreStatistics.js";
 
 export const stackLichessUpdatedEmitter = new TinyEmitter();
 
@@ -15,9 +15,9 @@ export class StackMove {
   public move: Move;
   public history: Move[];
   public lichessExplore: LichessExplore | null = null;
-  public lichessSummaryMap = new Map<
+  public exploreStatisticsMap = new Map<
     LichessExploreType,
-    LichessExploreSummary
+    ExploreStatistics
   >();
 
   public constructor(board: Chess, previousHistory: Move[]) {

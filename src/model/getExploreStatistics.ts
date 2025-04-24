@@ -44,9 +44,8 @@ export const getExploreStatistics = (
 
     const summary: LichessExploreSummary = {};
 
-    // TODO: handle only if it has all entries?
-    // TODO: handle fallbacks and nice things
-    let hasAll = true;
+    // NOTE: if we have ONE entry for things, it should be complete
+    let hasSome = false;
 
     for (const move of Object.keys(fenEntry.m)) {
       const moveObject = fenEntry.m[move];
@@ -58,12 +57,11 @@ export const getExploreStatistics = (
           draws: data[1],
           blackWins: data[2],
         };
-      } else {
-        hasAll = false;
+        hasSome = true;
       }
     }
 
-    if (hasAll) {
+    if (hasSome) {
       return new ExploreStatistics(summary, type, true);
     }
   }
