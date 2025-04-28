@@ -121,3 +121,29 @@ export const moveNodePopularityCountColorProperty = new LightDarkColorProperty(
   "#ccc",
   "#333",
 );
+
+export const moveNodeIncludedHoverColorProperty = new LightDarkColorProperty(
+  "#4af",
+  "#2b6fae",
+);
+export const moveNodeIncludedEvenColorProperty = new LightDarkColorProperty(
+  "#9cf",
+  "#1f4c75",
+);
+export const moveNodeIncludedOddColorProperty = new LightDarkColorProperty(
+  "#bdf",
+  "#183956",
+);
+
+export const moveNodeUnincludedHoverColorProperty = new LightDarkColorProperty(
+  "#ccc",
+  "#333",
+);
+export const moveNodeUnincludedEvenColorProperty = new LightDarkColorProperty(
+  "#ddd",
+  "#222",
+);
+export const moveNodeUnincludedOddColorProperty = new LightDarkColorProperty(
+  "#eee",
+  "#111",
+);

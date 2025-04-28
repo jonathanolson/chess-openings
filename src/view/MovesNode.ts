@@ -1,24 +1,22 @@
-import {
-  FireListener,
-  GridBox,
-  Node,
-  Rectangle,
-  Text,
-  VBox,
-} from "scenerystack/scenery";
+import { FireListener, Node, Rectangle, VBox } from "scenerystack/scenery";
 import { Model } from "../model/Model.js";
 import { stackLichessUpdatedEmitter } from "../model/StackMove.js";
 import { DerivedProperty } from "scenerystack/axon";
 import { getFen } from "../model/getFen.js";
 import { Chess } from "chess.js";
-import { boldFont, unboldFont } from "./theme.js";
-import { WinStatisticsBar } from "./WinStatisticsBar.js";
+import {
+  moveNodeUnincludedHoverColorProperty,
+  moveNodeUnincludedEvenColorProperty,
+  moveNodeUnincludedOddColorProperty,
+  moveNodeIncludedHoverColorProperty,
+  moveNodeIncludedEvenColorProperty,
+  moveNodeIncludedOddColorProperty,
+} from "./theme.js";
 import { LichessExploreWins } from "../model/getLichessExplore.js";
 import { initialFen } from "../model/initialFen.js";
 import { Fen, Move } from "../model/common.js";
 import {
   StockfishEntry,
-  stockfishEntryToString,
   stockfishEntryToWinPercentage,
 } from "../model/StockfishData.js";
 import { getExploreStatistics } from "../model/getExploreStatistics.js";
@@ -28,7 +26,7 @@ import {
 } from "../model/fenDataSource.js";
 import { ExploreStatistics } from "../model/ExploreStatistics.js";
 import _ from "lodash";
-import { PopularityStatisticsBar } from "./PopularityStatisticsBar.js";
+import { MoveRowNode } from "./MoveRowNode.js";
 
 export class MovesNode extends VBox {
   public constructor(model: Model) {
@@ -157,90 +155,17 @@ export class MovesNode extends VBox {
               )
             : null;
 
-          const bar = new WinStatisticsBar(
-            lichessWins,
+          const moveRowNode = new MoveRowNode(
+            move,
+            moveFen,
+            moveNode,
             model.isWhiteProperty.value,
+            stockfishIsWhite,
+            lichessWins,
+            lichessTotal,
             stockfishWinPercentage,
-            {
-              layoutOptions: { column: 2, row: 0 },
-            },
+            isIncludedInTree,
           );
-
-          // TODO: gridbox everything together
-          const gridBox = new GridBox({
-            spacing: 10,
-            children: [
-              new Text(move, {
-                font: isIncludedInTree ? boldFont : unboldFont,
-                layoutOptions: {
-                  column: 0,
-                  row: 0,
-                  minContentWidth: 45,
-                  xAlign: "left",
-                },
-              }),
-              new Text(
-                moveNode
-                  ? moveNode
-                      .getSubtreePriority(model.isWhiteProperty.value)
-                      .toFixed(1)
-                  : "-",
-                {
-                  font: unboldFont,
-                  layoutOptions: {
-                    column: 1,
-                    row: 0,
-                    minContentWidth: 45,
-                    xAlign: "right",
-                  },
-                },
-              ),
-              bar,
-              new Text(
-                stockfishEntry
-                  ? stockfishEntryToString(stockfishEntry, stockfishIsWhite)
-                  : "-",
-                {
-                  font: unboldFont,
-                  layoutOptions: {
-                    column: 3,
-                    row: 0,
-                    minContentWidth: 40,
-                    xAlign: "center",
-                  },
-                },
-              ),
-              new PopularityStatisticsBar(
-                lichessWins
-                  ? lichessWins.whiteWins +
-                    lichessWins.blackWins +
-                    lichessWins.draws
-                  : 0,
-                lichessTotal,
-                {
-                  layoutOptions: {
-                    column: 4,
-                    row: 0,
-                  },
-                },
-              ),
-              new Text(
-                moveNode &&
-                moveNode.isWhiteTurn() === model.isWhiteProperty.value
-                  ? moveNode.priority.toFixed(2)
-                  : "-",
-                {
-                  font: unboldFont,
-                  layoutOptions: {
-                    column: 5,
-                    row: 0,
-                    minContentWidth: 45,
-                    xAlign: "left",
-                  },
-                },
-              ),
-            ],
-          });
 
           // TODO: handle hover to show these options easily
           const fireListener = new FireListener({
@@ -261,15 +186,40 @@ export class MovesNode extends VBox {
             }
           });
 
+          // NOTE: DO NOT leak memory!
           const backgroundProperty = new DerivedProperty(
-            [fireListener.looksOverProperty],
-            (looksOver) => {
+            [
+              fireListener.looksOverProperty,
+              moveNodeIncludedHoverColorProperty,
+              moveNodeIncludedEvenColorProperty,
+              moveNodeIncludedOddColorProperty,
+              moveNodeUnincludedHoverColorProperty,
+              moveNodeUnincludedEvenColorProperty,
+              moveNodeUnincludedOddColorProperty,
+            ],
+            (
+              looksOver,
+              includedHoverColor,
+              includedEvenColor,
+              includedOddColor,
+              unincludedHoverColor,
+              unincludedEvenColor,
+              unincludedOddColor,
+            ) => {
               const isEven = i % 2 === 0;
 
               if (isIncludedInTree) {
-                return looksOver ? "#4af" : isEven ? "#9cf" : "#bdf";
+                return looksOver
+                  ? includedHoverColor
+                  : isEven
+                    ? includedEvenColor
+                    : includedOddColor;
               } else {
-                return looksOver ? "#ccc" : isEven ? "#ddd" : "#eee";
+                return looksOver
+                  ? unincludedHoverColor
+                  : isEven
+                    ? unincludedEvenColor
+                    : unincludedOddColor;
               }
             },
           );
@@ -278,10 +228,10 @@ export class MovesNode extends VBox {
             cursor: "pointer",
             inputListeners: [fireListener],
             children: [
-              Rectangle.bounds(gridBox.bounds.dilatedXY(5, 2), {
+              Rectangle.bounds(moveRowNode.bounds.dilatedXY(5, 2), {
                 fill: backgroundProperty,
               }),
-              gridBox,
+              moveRowNode,
             ],
           });
         }),
