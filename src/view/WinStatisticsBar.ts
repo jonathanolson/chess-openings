@@ -10,6 +10,7 @@ import { LichessExploreWins } from "../model/getLichessExplore";
 import { Bounds2, toFixed } from "scenerystack/dot";
 import { Shape } from "scenerystack/kite";
 import { boldFont } from "./theme.js";
+import { moveRowWinStatisticsBarInternalWidthProperty } from "./MoveRowConstants.js";
 
 export type WinStatisticsBarOptions = NodeOptions;
 
@@ -86,7 +87,7 @@ export class WinStatisticsBar extends Node {
     whiteOnLeft: boolean,
     winPercentage: number | null,
   ): void {
-    const barWidth = 150;
+    const barWidth = moveRowWinStatisticsBarInternalWidthProperty.value;
 
     const totalResults = lichessWins
       ? lichessWins.whiteWins + lichessWins.blackWins + lichessWins.draws

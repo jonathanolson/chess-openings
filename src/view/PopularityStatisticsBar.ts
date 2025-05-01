@@ -7,13 +7,14 @@ import {
   uiForegroundColorProperty,
   unboldFont,
 } from "./theme.js";
+import { MOVE_ROW_POPULARITY_WIDTH } from "./MoveRowConstants.js";
 
 export type PopularityStatisticsBarOptions = NodeOptions;
 
 const barHeight = 15;
 const percentageWidth = 40;
 const padding = 3;
-const barWidth = 60;
+const barWidth = MOVE_ROW_POPULARITY_WIDTH - percentageWidth - padding;
 
 export class PopularityStatisticsBar extends Node {
   private percentageText: Text = new Text("%", {

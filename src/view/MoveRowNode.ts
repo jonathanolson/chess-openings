@@ -11,11 +11,13 @@ import {
 } from "../model/StockfishData.js";
 import { fenDataStockfishData } from "../model/fenDataSource.js";
 import { Bounds2 } from "scenerystack/dot";
-
-const MOVE_TEXT_WIDTH = 35;
-const SUBTREE_WEIGHT_WIDTH = 25;
-const STOCKFISH_EVAL_WIDTH = 45;
-const PRIORITY_WIDTH = 45;
+import {
+  MOVE_ROW_MOVE_TEXT_WIDTH,
+  MOVE_ROW_PRIORITY_WIDTH,
+  MOVE_ROW_SPACING,
+  MOVE_ROW_STOCKFISH_EVAL_WIDTH,
+  MOVE_ROW_SUBTREE_WEIGHT_WIDTH,
+} from "./MoveRowConstants.js";
 
 export class MoveRowNode extends HBox {
   public readonly moveText: Text;
@@ -37,7 +39,7 @@ export class MoveRowNode extends HBox {
     public isIncludedInTree: boolean,
   ) {
     super({
-      spacing: 3,
+      spacing: MOVE_ROW_SPACING,
     });
 
     this.winStatisticsBar = new WinStatisticsBar(
@@ -55,7 +57,7 @@ export class MoveRowNode extends HBox {
     this.moveText = new Text(move, {
       fill: uiForegroundColorProperty,
       font: isIncludedInTree ? boldFont : unboldFont,
-      maxWidth: MOVE_TEXT_WIDTH,
+      maxWidth: MOVE_ROW_MOVE_TEXT_WIDTH,
     });
 
     this.subtreeWeightText = new Text(
@@ -63,7 +65,7 @@ export class MoveRowNode extends HBox {
       {
         fill: uiForegroundColorProperty,
         font: unboldFont,
-        maxWidth: SUBTREE_WEIGHT_WIDTH,
+        maxWidth: MOVE_ROW_SUBTREE_WEIGHT_WIDTH,
       },
     );
 
@@ -76,7 +78,7 @@ export class MoveRowNode extends HBox {
       {
         fill: uiForegroundColorProperty,
         font: unboldFont,
-        maxWidth: STOCKFISH_EVAL_WIDTH,
+        maxWidth: MOVE_ROW_STOCKFISH_EVAL_WIDTH,
       },
     );
 
@@ -87,21 +89,26 @@ export class MoveRowNode extends HBox {
       {
         fill: uiForegroundColorProperty,
         font: unboldFont,
-        maxWidth: PRIORITY_WIDTH,
+        maxWidth: MOVE_ROW_PRIORITY_WIDTH,
       },
     );
 
     this.children = [
       new AlignBox(this.moveText, {
         xAlign: "left",
-        alignBounds: new Bounds2(0, 0, MOVE_TEXT_WIDTH, this.moveText.height),
+        alignBounds: new Bounds2(
+          0,
+          0,
+          MOVE_ROW_MOVE_TEXT_WIDTH,
+          this.moveText.height,
+        ),
       }),
       new AlignBox(this.subtreeWeightText, {
         xAlign: "right",
         alignBounds: new Bounds2(
           0,
           0,
-          SUBTREE_WEIGHT_WIDTH,
+          MOVE_ROW_SUBTREE_WEIGHT_WIDTH,
           this.subtreeWeightText.height,
         ),
       }),
@@ -111,7 +118,7 @@ export class MoveRowNode extends HBox {
         alignBounds: new Bounds2(
           0,
           0,
-          STOCKFISH_EVAL_WIDTH,
+          MOVE_ROW_STOCKFISH_EVAL_WIDTH,
           this.stockfishEvalText.height,
         ),
       }),
@@ -121,7 +128,7 @@ export class MoveRowNode extends HBox {
         alignBounds: new Bounds2(
           0,
           0,
-          PRIORITY_WIDTH,
+          MOVE_ROW_PRIORITY_WIDTH,
           this.priorityText.height,
         ),
       }),

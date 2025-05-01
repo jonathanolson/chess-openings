@@ -4,6 +4,7 @@ import { nodesToCompactState } from "./nodesToCompactState.js";
 import { compactStateToNodes } from "./compactStateToNodes.js";
 import { scanConflicts } from "./scanConflicts.js";
 import {
+  BooleanProperty,
   DerivedProperty,
   EnumerationProperty,
   Property,
@@ -29,6 +30,17 @@ export class SaveStatus extends EnumerationValue {
   public static readonly FAILURE = new SaveStatus();
 
   public static readonly enumeration = new Enumeration(SaveStatus);
+}
+
+export class MoveRowSort extends EnumerationValue {
+  public static readonly MOVE = new MoveRowSort();
+  public static readonly SUBTREE = new MoveRowSort();
+  public static readonly WIN_STATISTICS = new MoveRowSort();
+  public static readonly STOCKFISH_EVAL = new MoveRowSort();
+  public static readonly POPULARITY_STATISTICS = new MoveRowSort();
+  public static readonly PRIORITY = new MoveRowSort();
+
+  public static readonly enumeration = new Enumeration(MoveRowSort);
 }
 
 export class Model {
@@ -79,6 +91,11 @@ export class Model {
   public readonly lichessExploreTypeProperty = new Property<LichessExploreType>(
     "blitzLow",
   );
+
+  public readonly moveRowSortProperty = new EnumerationProperty(
+    MoveRowSort.POPULARITY_STATISTICS,
+  );
+  public readonly moveRowSortIncludedFirstProperty = new BooleanProperty(true);
 
   public readonly saveStatusProperty = new EnumerationProperty(
     SaveStatus.NORMAL,

@@ -1,4 +1,11 @@
-import { FireListener, Node, Rectangle, VBox } from "scenerystack/scenery";
+import {
+  AlignBox,
+  FireListener,
+  Node,
+  Rectangle,
+  VBox,
+  VBoxOptions,
+} from "scenerystack/scenery";
 import { Model } from "../model/Model.js";
 import { stackLichessUpdatedEmitter } from "../model/StackMove.js";
 import { DerivedProperty } from "scenerystack/axon";
@@ -27,13 +34,34 @@ import {
 import { ExploreStatistics } from "../model/ExploreStatistics.js";
 import _ from "lodash";
 import { MoveRowNode } from "./MoveRowNode.js";
+import { EmptySelfOptions, optionize } from "scenerystack/phet-core";
+import { MoveHeaderRowNode } from "./MoveHeaderRowNode.js";
+import {
+  MOVE_ROW_DILATION_X,
+  MOVE_ROW_DILATION_Y,
+} from "./MoveRowConstants.js";
+
+type SelfOptions = EmptySelfOptions;
+
+export type MovesNodeOptions = VBoxOptions & SelfOptions;
 
 export class MovesNode extends VBox {
-  public constructor(model: Model) {
-    super({
-      align: "left",
-      visibleProperty: model.isNotDrillProperty,
+  public constructor(model: Model, providedOptions?: MovesNodeOptions) {
+    const options = optionize<MovesNodeOptions, SelfOptions, VBoxOptions>()(
+      {
+        align: "left",
+        visibleProperty: model.isNotDrillProperty,
+      },
+      providedOptions,
+    );
+
+    super(options);
+
+    const moveHeaderRowNode = new MoveHeaderRowNode(model);
+    const insetHeaderRow = new AlignBox(moveHeaderRowNode, {
+      leftMargin: MOVE_ROW_DILATION_X,
     });
+
     const updateMoveNode = () => {
       const stackMove = model.selectedStackMoveProperty.value;
       const fen: Fen = stackMove ? getFen(stackMove.board) : initialFen;
@@ -131,8 +159,9 @@ export class MovesNode extends VBox {
           )
         : 0;
 
-      this.children = this.children.concat(
-        moves.map((move, i) => {
+      this.children = [
+        insetHeaderRow,
+        ...moves.map((move, i) => {
           const lichessWins: LichessExploreWins | null =
             lichessSummary?.[move] ?? null;
 
@@ -228,17 +257,25 @@ export class MovesNode extends VBox {
             cursor: "pointer",
             inputListeners: [fireListener],
             children: [
-              Rectangle.bounds(moveRowNode.bounds.dilatedXY(5, 2), {
-                fill: backgroundProperty,
-              }),
+              Rectangle.bounds(
+                moveRowNode.bounds.dilatedXY(
+                  MOVE_ROW_DILATION_X,
+                  MOVE_ROW_DILATION_Y,
+                ),
+                {
+                  fill: backgroundProperty,
+                },
+              ),
               moveRowNode,
             ],
           });
         }),
-      );
+      ];
     };
 
     model.selectedStackMoveProperty.link(updateMoveNode);
+    model.moveRowSortProperty.lazyLink(updateMoveNode);
+    model.moveRowSortIncludedFirstProperty.lazyLink(updateMoveNode);
     model.isWhiteProperty.lazyLink(updateMoveNode);
     model.nodesProperty.lazyLink(updateMoveNode);
     model.lichessExploreTypeProperty.lazyLink(updateMoveNode);

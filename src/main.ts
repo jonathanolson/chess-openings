@@ -177,33 +177,41 @@ window.Chess = Chess;
 
   const openingInfoNode = new OpeningInfoNode(model);
 
-  const movesNode = new MovesNode(model);
+  const movesNode = new MovesNode(model, {
+    layoutOptions: {
+      stretch: true,
+    },
+  });
   const movesSettingsNode = new MovesSettingsNode(model);
 
   const lastDrillNode = new LastDrillNode(model);
 
-  mainContent.addChild(
-    new HBox({
-      spacing: 20,
-      align: "top",
-      children: [
-        new VBox({
-          spacing: 5,
-          children: [mainControlsNode, stackNode],
-        }),
-        new VBox({
-          align: "left",
-          spacing: 3,
-          children: [
-            openingInfoNode,
-            movesSettingsNode,
-            movesNode,
-            lastDrillNode,
-          ],
-        }),
-      ],
-    }),
-  );
+  const mainBox = new HBox({
+    spacing: 20,
+    align: "top",
+    children: [
+      new VBox({
+        spacing: 5,
+        children: [mainControlsNode, stackNode],
+      }),
+      new VBox({
+        align: "left",
+        spacing: 3,
+        children: [
+          openingInfoNode,
+          movesSettingsNode,
+          movesNode,
+          lastDrillNode,
+        ],
+        layoutOptions: { grow: 1 },
+      }),
+    ],
+  });
+  layoutBoundsProperty.link((layoutBounds) => {
+    mainBox.preferredWidth = layoutBounds.width;
+  });
+
+  mainContent.addChild(mainBox);
 
   const pgnInput = document.createElement("textarea");
   pgnInput.addEventListener("input", () => {

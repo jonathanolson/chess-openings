@@ -18,7 +18,11 @@ const config = {
   // So the build can be served from an arbitrary path
   base: "./",
 
-  server: {},
+  server: {
+    watch: {
+      ignored: ["**src/data/lichess*.json", "**src/data/stockfish*.json"],
+    },
+  },
 
   build: {
     rollupOptions: {
