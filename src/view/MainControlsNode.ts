@@ -25,6 +25,7 @@ import {
   stepBackwardSolidShape,
   stepForwardSolidShape,
   databaseSolidShape,
+  sortSolidShape,
 } from "scenery-fontawesome-5";
 import { TooltipListener, ViewContext } from "scenery-toolkit";
 import { logOut } from "../model/firebase-actions.js";
@@ -233,6 +234,18 @@ export class MainControlsNode extends VBox {
     const debugButtons = new HBox({
       spacing: 5,
       children: [
+        new BooleanRectangularStickyToggleButton(
+          model.moveRowSortIncludedFirstProperty,
+          {
+            content: new Path(sortSolidShape, {
+              fill: "black",
+              scale: 0.03,
+            }),
+            accessibleName: "Toggle Sorting Included Moves First",
+            baseColor: "#fff",
+            buttonAppearanceStrategy: ButtonNode.FlatAppearanceStrategy,
+          },
+        ),
         new RectangularPushButton({
           content: new Path(chartBarSolidShape, { fill: "black", scale: 0.03 }),
           accessibleName: "Show Statistics",

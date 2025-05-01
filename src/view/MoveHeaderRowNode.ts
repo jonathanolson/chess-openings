@@ -1,5 +1,16 @@
-import { HBox, Node, Rectangle, Text } from "scenerystack/scenery";
-import { unboldFont } from "./theme.js";
+import {
+  Color,
+  FireListener,
+  HBox,
+  Node,
+  Rectangle,
+  Text,
+} from "scenerystack/scenery";
+import {
+  moveNodeSelectedSortHeaderProperty,
+  uiForegroundColorProperty,
+  unboldFont,
+} from "./theme.js";
 import {
   MOVE_ROW_MOVE_TEXT_WIDTH,
   MOVE_ROW_POPULARITY_WIDTH,
@@ -9,8 +20,8 @@ import {
   MOVE_ROW_SUBTREE_WEIGHT_WIDTH,
   moveRowWinStatisticsBarWidthProperty,
 } from "./MoveRowConstants.js";
-import { Model } from "../model/Model.js";
-import { TReadOnlyProperty } from "scenerystack/axon";
+import { Model, MoveRowSort } from "../model/Model.js";
+import { DerivedProperty, TReadOnlyProperty } from "scenerystack/axon";
 import { Bounds2 } from "scenerystack/dot";
 
 export class MoveHeaderRowNode extends HBox {
@@ -18,12 +29,22 @@ export class MoveHeaderRowNode extends HBox {
     const createHeader = (
       string: string,
       width: number | TReadOnlyProperty<number>,
+      sorts: MoveRowSort[],
     ): Node => {
       const text = new Text(string, {
         font: unboldFont,
+        pickable: false,
+        fill: uiForegroundColorProperty,
       });
       const backgroundNode = new Rectangle({
         rectBounds: new Bounds2(0, text.top, 0, text.bottom),
+        cursor: "pointer",
+        fill: new DerivedProperty(
+          [model.moveRowSortProperty, moveNodeSelectedSortHeaderProperty],
+          (sort, color) => {
+            return sorts.includes(sort) ? color : Color.TRANSPARENT;
+          },
+        ),
       });
 
       const setWidth = (currentWidth: number) => {
@@ -41,6 +62,18 @@ export class MoveHeaderRowNode extends HBox {
         });
       }
 
+      backgroundNode.addInputListener(
+        new FireListener({
+          fire: () => {
+            const nextIndex =
+              (sorts.indexOf(model.moveRowSortProperty.value) + 1) %
+              sorts.length;
+
+            model.moveRowSortProperty.value = sorts[nextIndex];
+          },
+        }),
+      );
+
       return new Node({
         children: [backgroundNode, text],
       });
@@ -56,12 +89,23 @@ export class MoveHeaderRowNode extends HBox {
     super({
       spacing: MOVE_ROW_SPACING,
       children: [
-        createHeader("Move", MOVE_ROW_MOVE_TEXT_WIDTH),
-        createHeader("Tree", MOVE_ROW_SUBTREE_WEIGHT_WIDTH),
-        createHeader("Win Stats", moveRowWinStatisticsBarWidthProperty),
-        createHeader("Eval", MOVE_ROW_STOCKFISH_EVAL_WIDTH),
-        createHeader("Popularity", MOVE_ROW_POPULARITY_WIDTH),
-        createHeader("Priority", MOVE_ROW_PRIORITY_WIDTH),
+        createHeader("Move", MOVE_ROW_MOVE_TEXT_WIDTH, [MoveRowSort.MOVE]),
+        createHeader("Tree", MOVE_ROW_SUBTREE_WEIGHT_WIDTH, [
+          MoveRowSort.SUBTREE,
+        ]),
+        createHeader("Win Stats", moveRowWinStatisticsBarWidthProperty, [
+          MoveRowSort.WIN_STATISTICS,
+          MoveRowSort.WIN_DRAW_STATISTICS,
+        ]),
+        createHeader("Eval", MOVE_ROW_STOCKFISH_EVAL_WIDTH, [
+          MoveRowSort.STOCKFISH_EVAL,
+        ]),
+        createHeader("Popularity", MOVE_ROW_POPULARITY_WIDTH, [
+          MoveRowSort.POPULARITY_STATISTICS,
+        ]),
+        createHeader("Priority", MOVE_ROW_PRIORITY_WIDTH, [
+          MoveRowSort.PRIORITY,
+        ]),
       ],
     });
   }

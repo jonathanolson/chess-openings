@@ -134,6 +134,10 @@ export const moveNodeIncludedOddColorProperty = new LightDarkColorProperty(
   "#bdf",
   "#183956",
 );
+export const moveNodeSelectedSortHeaderProperty = new LightDarkColorProperty(
+  "rgba(0,0,0,0.2)",
+  "rgba(255,255,255,0.2)",
+);
 
 export const moveNodeUnincludedHoverColorProperty = new LightDarkColorProperty(
   "#ccc",
