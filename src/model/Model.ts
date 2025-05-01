@@ -36,6 +36,7 @@ export class MoveRowSort extends EnumerationValue {
   public static readonly MOVE = new MoveRowSort();
   public static readonly SUBTREE = new MoveRowSort();
   public static readonly WIN_STATISTICS = new MoveRowSort();
+  public static readonly WIN_DRAW_STATISTICS = new MoveRowSort();
   public static readonly STOCKFISH_EVAL = new MoveRowSort();
   public static readonly POPULARITY_STATISTICS = new MoveRowSort();
   public static readonly PRIORITY = new MoveRowSort();

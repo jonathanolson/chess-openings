@@ -1,9 +1,26 @@
-import { AlignBox, HBox, Text } from "scenerystack/scenery";
+import {
+  AlignBox,
+  FireListener,
+  HBox,
+  Node,
+  Rectangle,
+  Text,
+} from "scenerystack/scenery";
 import { ChessNode } from "../model/ChessNode";
 import { LichessExploreWins } from "../model/getLichessExplore.js";
 import { WinStatisticsBar } from "./WinStatisticsBar.js";
 import { PopularityStatisticsBar } from "./PopularityStatisticsBar.js";
-import { boldFont, uiForegroundColorProperty, unboldFont } from "./theme.js";
+import {
+  boldFont,
+  moveNodeIncludedEvenColorProperty,
+  moveNodeIncludedHoverColorProperty,
+  moveNodeIncludedOddColorProperty,
+  moveNodeUnincludedEvenColorProperty,
+  moveNodeUnincludedHoverColorProperty,
+  moveNodeUnincludedOddColorProperty,
+  uiForegroundColorProperty,
+  unboldFont,
+} from "./theme.js";
 import { Fen } from "../model/common.js";
 import {
   StockfishEntry,
@@ -12,14 +29,20 @@ import {
 import { fenDataStockfishData } from "../model/fenDataSource.js";
 import { Bounds2 } from "scenerystack/dot";
 import {
+  MOVE_ROW_DILATION_X,
+  MOVE_ROW_DILATION_Y,
   MOVE_ROW_MOVE_TEXT_WIDTH,
   MOVE_ROW_PRIORITY_WIDTH,
   MOVE_ROW_SPACING,
   MOVE_ROW_STOCKFISH_EVAL_WIDTH,
   MOVE_ROW_SUBTREE_WEIGHT_WIDTH,
 } from "./MoveRowConstants.js";
+import { Model } from "../model/Model.js";
+import { Chess } from "chess.js";
+import { getFen } from "../model/getFen.js";
+import { BooleanProperty, DerivedProperty } from "scenerystack/axon";
 
-export class MoveRowNode extends HBox {
+export class MoveRowNode extends Node {
   public readonly moveText: Text;
   public readonly subtreeWeightText: Text;
   public readonly stockfishEvalText: Text;
@@ -27,7 +50,12 @@ export class MoveRowNode extends HBox {
   public readonly winStatisticsBar: WinStatisticsBar;
   public readonly popularityStatisticsBar: PopularityStatisticsBar;
 
+  public readonly isEvenProperty = new BooleanProperty(false);
+  public subtreePriority: number | null;
+  public stockfishEntry: StockfishEntry | null;
+
   public constructor(
+    public readonly model: Model,
     public move: string,
     public fen: Fen,
     public moveNode: ChessNode | null,
@@ -39,7 +67,7 @@ export class MoveRowNode extends HBox {
     public isIncludedInTree: boolean,
   ) {
     super({
-      spacing: MOVE_ROW_SPACING,
+      cursor: "pointer",
     });
 
     this.winStatisticsBar = new WinStatisticsBar(
@@ -60,8 +88,11 @@ export class MoveRowNode extends HBox {
       maxWidth: MOVE_ROW_MOVE_TEXT_WIDTH,
     });
 
+    this.subtreePriority = moveNode
+      ? moveNode.getSubtreePriority(isWhite)
+      : null;
     this.subtreeWeightText = new Text(
-      moveNode ? moveNode.getSubtreePriority(isWhite).toFixed(1) : "",
+      this.subtreePriority !== null ? this.subtreePriority.toFixed(1) : "",
       {
         fill: uiForegroundColorProperty,
         font: unboldFont,
@@ -69,11 +100,10 @@ export class MoveRowNode extends HBox {
       },
     );
 
-    const stockfishEntry: StockfishEntry | null =
-      fenDataStockfishData[fen] ?? null;
+    this.stockfishEntry = fenDataStockfishData[fen] ?? null;
     this.stockfishEvalText = new Text(
-      stockfishEntry
-        ? stockfishEntryToString(stockfishEntry, isNextTurnWhite)
+      this.stockfishEntry
+        ? stockfishEntryToString(this.stockfishEntry, isNextTurnWhite)
         : "-",
       {
         fill: uiForegroundColorProperty,
@@ -93,46 +123,120 @@ export class MoveRowNode extends HBox {
       },
     );
 
-    this.children = [
-      new AlignBox(this.moveText, {
-        xAlign: "left",
-        alignBounds: new Bounds2(
-          0,
-          0,
-          MOVE_ROW_MOVE_TEXT_WIDTH,
-          this.moveText.height,
-        ),
-      }),
-      new AlignBox(this.subtreeWeightText, {
-        xAlign: "right",
-        alignBounds: new Bounds2(
-          0,
-          0,
-          MOVE_ROW_SUBTREE_WEIGHT_WIDTH,
-          this.subtreeWeightText.height,
-        ),
-      }),
-      this.winStatisticsBar,
-      new AlignBox(this.stockfishEvalText, {
-        xAlign: "center",
-        alignBounds: new Bounds2(
-          0,
-          0,
-          MOVE_ROW_STOCKFISH_EVAL_WIDTH,
-          this.stockfishEvalText.height,
-        ),
-      }),
-      this.popularityStatisticsBar,
-      new AlignBox(this.priorityText, {
-        xAlign: "right",
-        alignBounds: new Bounds2(
-          0,
-          0,
-          MOVE_ROW_PRIORITY_WIDTH,
-          this.priorityText.height,
-        ),
-      }),
-    ];
+    const hbox = new HBox({
+      spacing: MOVE_ROW_SPACING,
+      children: [
+        new AlignBox(this.moveText, {
+          xAlign: "left",
+          alignBounds: new Bounds2(
+            0,
+            0,
+            MOVE_ROW_MOVE_TEXT_WIDTH,
+            this.moveText.height,
+          ),
+        }),
+        new AlignBox(this.subtreeWeightText, {
+          xAlign: "right",
+          alignBounds: new Bounds2(
+            0,
+            0,
+            MOVE_ROW_SUBTREE_WEIGHT_WIDTH,
+            this.subtreeWeightText.height,
+          ),
+        }),
+        this.winStatisticsBar,
+        new AlignBox(this.stockfishEvalText, {
+          xAlign: "center",
+          alignBounds: new Bounds2(
+            0,
+            0,
+            MOVE_ROW_STOCKFISH_EVAL_WIDTH,
+            this.stockfishEvalText.height,
+          ),
+        }),
+        this.popularityStatisticsBar,
+        new AlignBox(this.priorityText, {
+          xAlign: "right",
+          alignBounds: new Bounds2(
+            0,
+            0,
+            MOVE_ROW_PRIORITY_WIDTH,
+            this.priorityText.height,
+          ),
+        }),
+      ],
+    });
+
+    // TODO: handle hover to show these options easily
+    const fireListener = new FireListener({
+      fire: () => {
+        const afterBoard = new Chess(getFen(model.boardProperty.value));
+        afterBoard.move(move);
+        model.addMoveBoard(afterBoard);
+      },
+    });
+
+    fireListener.looksOverProperty.lazyLink((looksOver) => {
+      if (looksOver) {
+        model.hoveredPotentialVerboseMoveProperty.value = new Chess(
+          getFen(model.boardProperty.value),
+        ).move(move);
+      } else {
+        model.hoveredPotentialVerboseMoveProperty.value = null;
+      }
+    });
+
+    this.addInputListener(fireListener);
+
+    // TODO: don't leak memory (pool MoveRowNodes)
+    const backgroundProperty = new DerivedProperty(
+      [
+        fireListener.looksOverProperty,
+        moveNodeIncludedHoverColorProperty,
+        moveNodeIncludedEvenColorProperty,
+        moveNodeIncludedOddColorProperty,
+        moveNodeUnincludedHoverColorProperty,
+        moveNodeUnincludedEvenColorProperty,
+        moveNodeUnincludedOddColorProperty,
+        this.isEvenProperty,
+      ],
+      (
+        looksOver,
+        includedHoverColor,
+        includedEvenColor,
+        includedOddColor,
+        unincludedHoverColor,
+        unincludedEvenColor,
+        unincludedOddColor,
+        isEven,
+      ) => {
+        if (isIncludedInTree) {
+          return looksOver
+            ? includedHoverColor
+            : isEven
+              ? includedEvenColor
+              : includedOddColor;
+        } else {
+          return looksOver
+            ? unincludedHoverColor
+            : isEven
+              ? unincludedEvenColor
+              : unincludedOddColor;
+        }
+      },
+    );
+
+    const highlightBackground = new Rectangle({
+      fill: backgroundProperty,
+    });
+    hbox.boundsProperty.link((bounds) => {
+      highlightBackground.rectBounds = bounds.dilatedXY(
+        MOVE_ROW_DILATION_X,
+        MOVE_ROW_DILATION_Y,
+      );
+    });
+
+    this.children = [highlightBackground, hbox];
   }
 
   public update(
@@ -168,14 +272,15 @@ export class MoveRowNode extends HBox {
     this.moveText.string = move;
     this.moveText.font = isIncludedInTree ? boldFont : unboldFont;
 
-    this.subtreeWeightText.string = moveNode
-      ? moveNode.getSubtreePriority(isWhite).toFixed(1)
-      : "-";
+    this.subtreePriority = moveNode
+      ? moveNode.getSubtreePriority(isWhite)
+      : null;
+    this.subtreeWeightText.string =
+      this.subtreePriority !== null ? this.subtreePriority.toFixed(1) : "-";
 
-    const stockfishEntry: StockfishEntry | null =
-      fenDataStockfishData[fen] ?? null;
-    this.stockfishEvalText.string = stockfishEntry
-      ? stockfishEntryToString(stockfishEntry, isNextTurnWhite)
+    this.stockfishEntry = fenDataStockfishData[fen] ?? null;
+    this.stockfishEvalText.string = this.stockfishEntry
+      ? stockfishEntryToString(this.stockfishEntry, isNextTurnWhite)
       : "-";
 
     this.priorityText.string =

@@ -1,24 +1,8 @@
-import {
-  AlignBox,
-  FireListener,
-  Node,
-  Rectangle,
-  VBox,
-  VBoxOptions,
-} from "scenerystack/scenery";
-import { Model } from "../model/Model.js";
+import { AlignBox, VBox, VBoxOptions } from "scenerystack/scenery";
+import { Model, MoveRowSort } from "../model/Model.js";
 import { stackLichessUpdatedEmitter } from "../model/StackMove.js";
-import { DerivedProperty } from "scenerystack/axon";
 import { getFen } from "../model/getFen.js";
 import { Chess } from "chess.js";
-import {
-  moveNodeUnincludedHoverColorProperty,
-  moveNodeUnincludedEvenColorProperty,
-  moveNodeUnincludedOddColorProperty,
-  moveNodeIncludedHoverColorProperty,
-  moveNodeIncludedEvenColorProperty,
-  moveNodeIncludedOddColorProperty,
-} from "./theme.js";
 import { LichessExploreWins } from "../model/getLichessExplore.js";
 import { initialFen } from "../model/initialFen.js";
 import { Fen, Move } from "../model/common.js";
@@ -36,10 +20,7 @@ import _ from "lodash";
 import { MoveRowNode } from "./MoveRowNode.js";
 import { EmptySelfOptions, optionize } from "scenerystack/phet-core";
 import { MoveHeaderRowNode } from "./MoveHeaderRowNode.js";
-import {
-  MOVE_ROW_DILATION_X,
-  MOVE_ROW_DILATION_Y,
-} from "./MoveRowConstants.js";
+import { MOVE_ROW_DILATION_X } from "./MoveRowConstants.js";
 
 type SelfOptions = EmptySelfOptions;
 
@@ -109,37 +90,9 @@ export class MovesNode extends VBox {
         }
       }
 
-      const allMoves = stackMove?.board.moves() ?? new Chess().moves();
-
-      const moves: Move[] = [];
+      const moves: Move[] = stackMove?.board.moves() ?? new Chess().moves();
 
       const lichessSummary = exploreStatistics?.summary ?? null;
-
-      // in both (lichess order)
-      if (lichessSummary && node) {
-        moves.push(
-          ...Object.keys(lichessSummary).filter((move) =>
-            node.moves.includes(move),
-          ),
-        );
-      }
-
-      // in our moves only (our order)
-      if (node) {
-        moves.push(...node.moves.filter((move) => !moves.includes(move)));
-      }
-
-      // in lichess only (lichess order)
-      if (lichessSummary) {
-        moves.push(
-          ...Object.keys(lichessSummary).filter(
-            (move) => !moves.includes(move),
-          ),
-        );
-      }
-
-      // remaining moves
-      moves.push(...allMoves.filter((move) => !moves.includes(move)));
 
       if (moves.length === 0) {
         this.children = [];
@@ -161,115 +114,156 @@ export class MovesNode extends VBox {
 
       this.children = [
         insetHeaderRow,
-        ...moves.map((move, i) => {
-          const lichessWins: LichessExploreWins | null =
-            lichessSummary?.[move] ?? null;
+        ...moves
+          .map((move) => {
+            const lichessWins: LichessExploreWins | null =
+              lichessSummary?.[move] ?? null;
 
-          const isIncludedInTree = node && node.moves.includes(move);
-          const moveNode = isIncludedInTree ? node.getChildNode(move) : null;
+            const isIncludedInTree = node && node.moves.includes(move);
+            const moveNode = isIncludedInTree ? node.getChildNode(move) : null;
 
-          const moveBoard = new Chess(fen);
-          moveBoard.move(move);
-          const moveFen = getFen(moveBoard);
-          const stockfishEntry: StockfishEntry | null =
-            fenDataStockfishData[moveFen] ?? null;
+            const moveBoard = new Chess(fen);
+            moveBoard.move(move);
+            const moveFen = getFen(moveBoard);
+            const stockfishEntry: StockfishEntry | null =
+              fenDataStockfishData[moveFen] ?? null;
 
-          const reversePercentIfBlack = (percent: number) =>
-            model.isWhiteProperty.value ? percent : 100 - percent;
+            const reversePercentIfBlack = (percent: number) =>
+              model.isWhiteProperty.value ? percent : 100 - percent;
 
-          const stockfishIsWhite = moveBoard.turn() === "w";
-          const stockfishWinPercentage: number | null = stockfishEntry
-            ? reversePercentIfBlack(
-                stockfishEntryToWinPercentage(stockfishEntry, stockfishIsWhite),
-              )
-            : null;
+            const stockfishIsWhite = moveBoard.turn() === "w";
+            const stockfishWinPercentage: number | null = stockfishEntry
+              ? reversePercentIfBlack(
+                  stockfishEntryToWinPercentage(
+                    stockfishEntry,
+                    stockfishIsWhite,
+                  ),
+                )
+              : null;
 
-          const moveRowNode = new MoveRowNode(
-            move,
-            moveFen,
-            moveNode,
-            model.isWhiteProperty.value,
-            stockfishIsWhite,
-            lichessWins,
-            lichessTotal,
-            stockfishWinPercentage,
-            isIncludedInTree,
-          );
+            // TODO: don't create these new each time!
+            return new MoveRowNode(
+              model,
+              move,
+              moveFen,
+              moveNode,
+              model.isWhiteProperty.value,
+              stockfishIsWhite,
+              lichessWins,
+              lichessTotal,
+              stockfishWinPercentage,
+              isIncludedInTree,
+            );
+          })
+          .sort((a, b) => {
+            const sort = model.moveRowSortProperty.value;
+            const includedFirst = model.moveRowSortIncludedFirstProperty.value;
 
-          // TODO: handle hover to show these options easily
-          const fireListener = new FireListener({
-            fire: () => {
-              const afterBoard = new Chess(getFen(model.boardProperty.value));
-              afterBoard.move(move);
-              model.addMoveBoard(afterBoard);
-            },
-          });
-
-          fireListener.looksOverProperty.lazyLink((looksOver) => {
-            if (looksOver) {
-              model.hoveredPotentialVerboseMoveProperty.value = new Chess(
-                getFen(model.boardProperty.value),
-              ).move(move);
-            } else {
-              model.hoveredPotentialVerboseMoveProperty.value = null;
+            if (includedFirst && a.isIncludedInTree !== b.isIncludedInTree) {
+              return a.isIncludedInTree ? -1 : 1;
             }
-          });
 
-          // NOTE: DO NOT leak memory!
-          const backgroundProperty = new DerivedProperty(
-            [
-              fireListener.looksOverProperty,
-              moveNodeIncludedHoverColorProperty,
-              moveNodeIncludedEvenColorProperty,
-              moveNodeIncludedOddColorProperty,
-              moveNodeUnincludedHoverColorProperty,
-              moveNodeUnincludedEvenColorProperty,
-              moveNodeUnincludedOddColorProperty,
-            ],
-            (
-              looksOver,
-              includedHoverColor,
-              includedEvenColor,
-              includedOddColor,
-              unincludedHoverColor,
-              unincludedEvenColor,
-              unincludedOddColor,
-            ) => {
-              const isEven = i % 2 === 0;
+            const aWhiteWins = a.lichessWins?.whiteWins ?? 0;
+            const aDraws = a.lichessWins?.draws ?? 0;
+            const aBlackWins = a.lichessWins?.blackWins ?? 0;
+            const aTotal = aWhiteWins + aDraws + aBlackWins;
+            const aWins = model.isWhiteProperty.value ? aWhiteWins : aBlackWins;
 
-              if (isIncludedInTree) {
-                return looksOver
-                  ? includedHoverColor
-                  : isEven
-                    ? includedEvenColor
-                    : includedOddColor;
-              } else {
-                return looksOver
-                  ? unincludedHoverColor
-                  : isEven
-                    ? unincludedEvenColor
-                    : unincludedOddColor;
+            const bWhiteWins = b.lichessWins?.whiteWins ?? 0;
+            const bDraws = b.lichessWins?.draws ?? 0;
+            const bBlackWins = b.lichessWins?.blackWins ?? 0;
+            const bTotal = bWhiteWins + bDraws + bBlackWins;
+            const bWins = model.isWhiteProperty.value ? bWhiteWins : bBlackWins;
+
+            if (sort === MoveRowSort.MOVE) {
+              return a.move.localeCompare(b.move);
+            } else if (sort === MoveRowSort.SUBTREE) {
+              if (a.subtreePriority !== b.subtreePriority) {
+                if (a.subtreePriority === null) {
+                  return 1;
+                }
+                if (b.subtreePriority === null) {
+                  return -1;
+                }
+                return b.subtreePriority - a.subtreePriority;
               }
-            },
-          );
+            } else if (
+              sort === MoveRowSort.WIN_STATISTICS ||
+              sort === MoveRowSort.WIN_DRAW_STATISTICS
+            ) {
+              if (aTotal > 0 || bTotal > 0) {
+                if (aTotal === 0) {
+                  return 1;
+                }
+                if (bTotal === 0) {
+                  return -1;
+                }
 
-          return new Node({
-            cursor: "pointer",
-            inputListeners: [fireListener],
-            children: [
-              Rectangle.bounds(
-                moveRowNode.bounds.dilatedXY(
-                  MOVE_ROW_DILATION_X,
-                  MOVE_ROW_DILATION_Y,
-                ),
-                {
-                  fill: backgroundProperty,
-                },
-              ),
-              moveRowNode,
-            ],
-          });
-        }),
+                const aVal =
+                  (sort === MoveRowSort.WIN_STATISTICS
+                    ? aWins
+                    : aWins + aDraws) / aTotal;
+                const bVal =
+                  (sort === MoveRowSort.WIN_STATISTICS
+                    ? bWins
+                    : bWins + bDraws) / bTotal;
+
+                return bVal - aVal;
+              }
+            } else if (sort === MoveRowSort.STOCKFISH_EVAL) {
+              const aVal = a.stockfishEntry
+                ? stockfishEntryToWinPercentage(
+                    a.stockfishEntry,
+                    a.isNextTurnWhite,
+                  )
+                : null;
+              const bVal = b.stockfishEntry
+                ? stockfishEntryToWinPercentage(
+                    b.stockfishEntry,
+                    b.isNextTurnWhite,
+                  )
+                : null;
+
+              if (aVal !== null || bVal !== null) {
+                if (aVal === null) {
+                  return 1;
+                }
+                if (bVal === null) {
+                  return -1;
+                }
+
+                return bVal - aVal;
+              }
+            } else if (sort === MoveRowSort.PRIORITY) {
+              const aVal =
+                a.moveNode && a.moveNode.isWhiteTurn() === a.isWhite
+                  ? a.moveNode.priority
+                  : null;
+              const bVal =
+                b.moveNode && b.moveNode.isWhiteTurn() === b.isWhite
+                  ? b.moveNode.priority
+                  : null;
+
+              if (aVal !== null || bVal !== null) {
+                if (aVal === null) {
+                  return 1;
+                }
+                if (bVal === null) {
+                  return -1;
+                }
+
+                return bVal - aVal;
+              }
+            }
+
+            // backup sort! (and just... popularity statistics in general)
+            return bTotal - aTotal;
+          })
+          .map((moveRowNode, i) => {
+            moveRowNode.isEvenProperty.value = i % 2 === 0;
+
+            return moveRowNode;
+          }),
       ];
     };
 
