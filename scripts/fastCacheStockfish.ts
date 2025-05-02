@@ -29,6 +29,8 @@ import { boostLines } from "./boostLines.js";
 // npx tsx scripts/cacheStockfish.ts
 
 const depth = 36;
+const baseMoveCount = 2;
+const skipZeroProbability = false;
 
 const lichessType = process.argv[2];
 const orderMethod = process.argv[3];
@@ -169,8 +171,6 @@ os.setPriority(os.constants.priority.PRIORITY_LOW);
   } else if (orderMethod === "biased" || orderMethod === "biasedLeaf") {
     const leafOnly = orderMethod === "biasedLeaf";
 
-    const skipZeroProbability = true;
-
     console.log("computing popularity map");
 
     const popularityMap: Record<
@@ -235,11 +235,12 @@ os.setPriority(os.constants.priority.PRIORITY_LOW);
               possibleMoveCount > 0 ? 1 / possibleMoveCount : 0;
             if (explore && explore.m) {
               const getMoveCount = (move: Move) =>
-                explore.m && explore.m[move]
+                baseMoveCount +
+                (explore.m && explore.m[move]
                   ? explore.m[move].d[0] +
                     explore.m[move].d[1] +
                     explore.m[move].d[2]
-                  : 0;
+                  : 0);
 
               const totalMoveCount = Object.keys(explore.m).reduce(
                 (sum, move) => sum + getMoveCount(move),
@@ -288,7 +289,7 @@ os.setPriority(os.constants.priority.PRIORITY_LOW);
             popularityMap[fen].popularity += popularity;
           } else {
             popularityMap[fen] = {
-              popularity,
+              popularity: popularity,
               histories: histories,
             };
           }
@@ -304,7 +305,8 @@ os.setPriority(os.constants.priority.PRIORITY_LOW);
         for (const explore of explores) {
           if (explore.m) {
             for (const move of Object.keys(explore.m)) {
-              totalNextCount += getExploreMoveCount(explore, move);
+              totalNextCount +=
+                baseMoveCount + getExploreMoveCount(explore, move);
             }
           }
         }
@@ -330,7 +332,7 @@ os.setPriority(os.constants.priority.PRIORITY_LOW);
             let moveCount = 0;
             for (const explore of explores) {
               if (explore && explore.m) {
-                moveCount += getExploreMoveCount(explore, move);
+                moveCount += baseMoveCount + getExploreMoveCount(explore, move);
                 if (explore.m[move]) {
                   nextExplores.push(explore.m[move]);
                 }
@@ -359,10 +361,8 @@ os.setPriority(os.constants.priority.PRIORITY_LOW);
             for (const nextExplore of nextExplores) {
               if (nextExplore.m) {
                 for (const nextMove of Object.keys(nextExplore.m)) {
-                  totalNextNextCount += getExploreMoveCount(
-                    nextExplore,
-                    nextMove,
-                  );
+                  totalNextNextCount +=
+                    baseMoveCount + getExploreMoveCount(nextExplore, nextMove);
                 }
               }
             }
@@ -386,7 +386,8 @@ os.setPriority(os.constants.priority.PRIORITY_LOW);
                 let moveCount = 0;
                 for (const explore of nextExplores) {
                   if (explore && explore.m) {
-                    moveCount += getExploreMoveCount(explore, nextMove);
+                    moveCount +=
+                      baseMoveCount + getExploreMoveCount(explore, nextMove);
                   }
                 }
                 partialNextNextProbability = moveCount / totalNextNextCount;
