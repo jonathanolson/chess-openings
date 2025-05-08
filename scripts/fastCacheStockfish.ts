@@ -29,7 +29,7 @@ import { boostLines } from "./boostLines.js";
 // npx tsx scripts/cacheStockfish.ts
 
 const depth = 36;
-const baseMoveCount = 2;
+const baseMoveCount = 1;
 const skipZeroProbability = false;
 
 const lichessType = process.argv[2];
