@@ -121,7 +121,7 @@ export class MovesNode extends VBox {
             const lichessWins: LichessExploreWins | null =
               lichessSummary?.[move] ?? null;
 
-            const isIncludedInTree = node && node.moves.includes(move);
+            const isIncludedInTree = !!(node && node.moves.includes(move));
             const moveNode = isIncludedInTree ? node.getChildNode(move) : null;
 
             const moveBoard = new Chess(fen);
