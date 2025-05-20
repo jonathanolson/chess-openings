@@ -27,6 +27,8 @@ type SelfOptions = EmptySelfOptions;
 export type MovesNodeOptions = VBoxOptions & SelfOptions;
 
 export class MovesNode extends VBox {
+  private readonly moveRowNodes: MoveRowNode[] = [];
+
   public constructor(model: Model, providedOptions?: MovesNodeOptions) {
     const options = optionize<MovesNodeOptions, SelfOptions, VBoxOptions>()(
       {
@@ -115,7 +117,7 @@ export class MovesNode extends VBox {
       this.children = [
         insetHeaderRow,
         ...moves
-          .map((move) => {
+          .map((move, i) => {
             const lichessWins: LichessExploreWins | null =
               lichessSummary?.[move] ?? null;
 
@@ -141,19 +143,36 @@ export class MovesNode extends VBox {
                 )
               : null;
 
-            // TODO: don't create these new each time!
-            return new MoveRowNode(
-              model,
-              move,
-              moveFen,
-              moveNode,
-              model.isWhiteProperty.value,
-              stockfishIsWhite,
-              lichessWins,
-              lichessTotal,
-              stockfishWinPercentage,
-              isIncludedInTree,
-            );
+            let moveRowNode: MoveRowNode;
+            if (this.moveRowNodes.length > i) {
+              moveRowNode = this.moveRowNodes[i];
+              moveRowNode.update(
+                move,
+                moveFen,
+                moveNode,
+                model.isWhiteProperty.value,
+                stockfishIsWhite,
+                lichessWins,
+                lichessTotal,
+                stockfishWinPercentage,
+                isIncludedInTree,
+              );
+            } else {
+              moveRowNode = new MoveRowNode(
+                model,
+                move,
+                moveFen,
+                moveNode,
+                model.isWhiteProperty.value,
+                stockfishIsWhite,
+                lichessWins,
+                lichessTotal,
+                stockfishWinPercentage,
+                isIncludedInTree,
+              );
+              this.moveRowNodes.push(moveRowNode);
+            }
+            return moveRowNode;
           })
           .sort((a, b) => {
             const sort = model.moveRowSortProperty.value;

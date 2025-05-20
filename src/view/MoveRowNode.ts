@@ -49,6 +49,8 @@ export class MoveRowNode extends Node {
   public readonly priorityText: Text;
   public readonly winStatisticsBar: WinStatisticsBar;
   public readonly popularityStatisticsBar: PopularityStatisticsBar;
+  public readonly isIncludedInTreeProperty: BooleanProperty =
+    new BooleanProperty(false);
 
   public readonly isEvenProperty = new BooleanProperty(false);
   public subtreePriority: number | null;
@@ -69,6 +71,8 @@ export class MoveRowNode extends Node {
     super({
       cursor: "pointer",
     });
+
+    this.isIncludedInTreeProperty.value = isIncludedInTree;
 
     this.winStatisticsBar = new WinStatisticsBar(
       lichessWins,
@@ -171,7 +175,7 @@ export class MoveRowNode extends Node {
     const fireListener = new FireListener({
       fire: () => {
         const afterBoard = new Chess(getFen(model.boardProperty.value));
-        afterBoard.move(move);
+        afterBoard.move(this.move);
         model.addMoveBoard(afterBoard);
       },
     });
@@ -180,7 +184,7 @@ export class MoveRowNode extends Node {
       if (looksOver) {
         model.hoveredPotentialVerboseMoveProperty.value = new Chess(
           getFen(model.boardProperty.value),
-        ).move(move);
+        ).move(this.move);
       } else {
         model.hoveredPotentialVerboseMoveProperty.value = null;
       }
@@ -199,6 +203,7 @@ export class MoveRowNode extends Node {
         moveNodeUnincludedEvenColorProperty,
         moveNodeUnincludedOddColorProperty,
         this.isEvenProperty,
+        this.isIncludedInTreeProperty,
       ],
       (
         looksOver,
@@ -209,6 +214,7 @@ export class MoveRowNode extends Node {
         unincludedEvenColor,
         unincludedOddColor,
         isEven,
+        isIncludedInTree,
       ) => {
         if (isIncludedInTree) {
           return looksOver
@@ -259,6 +265,7 @@ export class MoveRowNode extends Node {
     this.lichessTotal = lichessTotal;
     this.stockfishWinPercentage = stockfishWinPercentage;
     this.isIncludedInTree = isIncludedInTree;
+    this.isIncludedInTreeProperty.value = isIncludedInTree;
 
     this.winStatisticsBar.setData(lichessWins, isWhite, stockfishWinPercentage);
     this.popularityStatisticsBar.setData(
