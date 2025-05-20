@@ -232,7 +232,7 @@ export class MovesNode extends VBox {
                   return -1;
                 }
 
-                return bVal - aVal;
+                return model.isWhiteProperty.value ? bVal - aVal : aVal - bVal;
               }
             } else if (sort === MoveRowSort.PRIORITY) {
               const aVal =
